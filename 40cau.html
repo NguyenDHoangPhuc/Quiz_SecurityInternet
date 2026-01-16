@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn Tập An Toàn Thông Tin - 40 Câu (Đã sửa lỗi đáp án)</title>
+    <style>
+        :root {
+            --primary-color: #0f172a;
+            --accent-color: #3b82f6;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-color: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .progress-container {
+            background-color: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .progress-bar {
+            background-color: var(--accent-color);
+            height: 100%;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-box {
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: var(--primary-color);
+        }
+
+        /* SVG Diagram Styles */
+        .diagram-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px auto;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px dashed #cbd5e1;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        svg text {
+            font-family: sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .option-btn {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1rem;
+            color: var(--text-color);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: #eff6ff;
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-btn.correct {
+            background-color: #f0fdf4;
+            border-color: var(--success-color);
+            color: #15803d;
+        }
+        
+        .option-btn.correct::after {
+            content: "✓";
+            position: absolute;
+            right: 15px;
+            font-weight: bold;
+            color: var(--success-color);
+        }
+
+        .option-btn.wrong {
+            background-color: #fef2f2;
+            border-color: var(--error-color);
+            color: #b91c1c;
+        }
+
+        .option-btn.wrong::after {
+            content: "✕";
+            position: absolute;
+            right: 15px;
+            font-weight: bold;
+            color: var(--error-color);
+        }
+
+        .explanation {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #eff6ff;
+            border-left: 5px solid var(--accent-color);
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .explanation strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-restart {
+            background-color: transparent;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .btn-restart:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        .btn-next {
+            background-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-next:hover:not(:disabled) {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-next:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .container { padding: 20px; border-radius: 0; min-height: 100vh; }
+            .question-text { font-size: 1.1rem; }
+            .controls { flex-direction: column-reverse; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn Tập ATTT</h1>
+        <div style="font-weight: bold; color: #64748b;">Câu <span id="current-q">1</span>/40</div>
+    </header>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div id="quiz-content">
+        <div class="question-box">
+            <div id="diagram-area"></div>
+            <div class="question-text" id="question-text">Loading...</div>
+            <div class="options-grid" id="options-area"></div>
+        </div>
+
+        <div class="explanation" id="explanation">
+            <strong>Giải thích:</strong>
+            <span id="explanation-text"></span>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-restart" onclick="resetQuiz()">Làm lại từ đầu</button>
+            <button class="btn btn-next" id="next-btn" onclick="nextQuestion()">Câu tiếp theo →</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu câu hỏi ĐÃ ĐƯỢC XÁO TRỘN VỊ TRÍ ĐÁP ÁN
+    const questions = [
+        {
+            q: "Hệ thống phát hiện nhiều gói tin HTTP có cùng Cookies và tham số, nhưng lại được gửi từ các địa chỉ IP khác nhau. Đây là dấu hiệu của tấn công nào?",
+            a: ["SQL Injection", "Session Replay Attack (Phát lại phiên)", "XSS", "Phishing"],
+            correct: 1,
+            desc: "Khi một phiên hợp lệ (Cookie giống nhau) xuất hiện từ nhiều IP lạ, đó là dấu hiệu phiên đã bị bắt và đang bị kẻ tấn công phát lại."
+        },
+        {
+            q: "Nếu phát hiện các gói tin ICMP đến từ 100 địa chỉ IP khác nhau dội vào hệ thống trong vòng 10 giây, đây là dấu hiệu của:",
+            a: ["Man-in-the-Middle", "Port Scanning", "DDoS (Distributed Denial of Service)", "IP Spoofing đơn lẻ"],
+            correct: 2,
+            desc: "Lượng lớn traffic (ICMP) đến từ nhiều nguồn (100 IP) trong thời gian ngắn là đặc điểm của tấn công DDoS."
+        },
+        {
+            q: "Hành động đầu tiên cần làm khi phát hiện dữ liệu nhạy cảm bị lộ lọt (Data Breach) là gì?",
+            a: ["Điều tra nguồn gốc", "Containment (Khoanh vùng/Cô lập hệ thống)", "Công bố báo chí", "Xóa toàn bộ dữ liệu"],
+            correct: 1,
+            desc: "Ưu tiên hàng đầu là Containment (Khoanh vùng) để ngăn chặn thiệt hại lan rộng trước khi làm bất cứ điều gì khác."
+        },
+        {
+            q: "Nếu nghi ngờ máy tính đã bị nhiễm Keylogger, quy trình xử lý an toàn nhất là gì?",
+            a: ["Dùng bàn phím ảo trên máy đó", "Đổi pass ngay trên máy đó", "Dùng máy sạch khác đổi mật khẩu -> Ngắt mạng -> Xử lý máy nhiễm", "Gửi log cho hacker xin lại"],
+            correct: 2,
+            desc: "Máy nhiễm không còn tin cậy. Phải bảo vệ tài khoản bằng thiết bị sạch trước."
+        },
+        {
+            q: "Việc thu thập thông tin về 'Domain name', 'VPN points', 'Network blocks' thuộc giai đoạn tấn công nào?",
+            a: ["Scanning (Quét)", "Footprinting / Reconnaissance (Do thám)", "Gaining Access (Chiếm quyền)", "Covering Tracks"],
+            correct: 1,
+            desc: "Đây là bước thu thập thông tin hạ tầng để vẽ bản đồ mục tiêu."
+        },
+        {
+            q: "Các yếu tố quan trọng nhất để đánh giá hiệu quả kiểm thử của một chương trình phát hiện malware là gì?",
+            a: ["Tỷ lệ False Positive (Báo giả) và False Negative (Bỏ sót)", "Giao diện đẹp", "Giá tiền", "Dung lượng cài đặt"],
+            correct: 0,
+            desc: "Độ chính xác đo bằng việc bắt đúng (không sót) và không bắt nhầm."
+        },
+        {
+            q: "Tấn công MAC Flooding làm tràn bảng CAM, khiến Switch bị suy yếu và rơi vào trạng thái nào?",
+            a: ["Shutdown", "Fail Open / Hub Mode (Gửi gói tin ra tất cả các cổng)", "Routing Mode", "Blocking Mode"],
+            correct: 1,
+            desc: "Switch không học được MAC mới nên chuyển sang chế độ broadcast (như Hub), giúp hacker nghe lén."
+        },
+        {
+            q: "Cơ chế nào giúp giảm thiểu rủi ro dò mật khẩu (Brute Force) nhưng vẫn đảm bảo trải nghiệm người dùng?",
+            a: ["Exponential Backoff (Tăng thời gian chờ sau mỗi lần sai)", "Mật khẩu dài hơn", "Nhập sai vô hạn", "CAPTCHA"],
+            correct: 0,
+            desc: "Tăng thời gian chờ (1s, 2s, 4s...) làm nản lòng hacker mà không gây phiền toái quá lớn cho người dùng thật."
+        },
+        {
+            q: "Trình tự tiêu chuẩn các bước hành động tấn công của hacker là:",
+            a: ["Scan -> Recon -> Access -> Maintain -> Clear", "Recon -> Scan -> Access -> Maintain -> Clear", "Access -> Scan -> Recon -> Clear -> Maintain", "Recon -> Access -> Scan -> Maintain -> Clear"],
+            correct: 1,
+            desc: "Do thám -> Quét -> Chiếm quyền -> Duy trì -> Xóa dấu vết."
+        },
+        {
+            q: "Kỹ thuật hack mật khẩu nào sử dụng một danh sách các từ phổ biến có sẵn?",
+            a: ["Brute Force", "Dictionary Attack (Tấn công từ điển)", "Rainbow Table", "Social Engineering"],
+            correct: 1,
+            desc: "Sử dụng 'từ điển' chứa các mật khẩu phổ biến để thử."
+        },
+        {
+            q: "Nhận định nào sau đây đúng nhất về Wireshark?",
+            a: ["Network Protocol Analyzer (Phân tích giao thức mạng)", "Vulnerability Scanner", "Password Cracker", "IPS"],
+            correct: 0,
+            desc: "Wireshark chuyên dùng để bắt và phân tích gói tin."
+        },
+        {
+            q: "Các cờ (Flags) trong TCP Header bao gồm:",
+            a: ["URG, ACK, PSH, RST, SYN, END", "URG, ACK, PSH, RST, SYN, FIN", "SYN, ACK, FIN, RST, PSH, HELLO", "START, STOP, ACK..."],
+            correct: 1,
+            desc: "6 cờ cơ bản: Urgent, Acknowledge, Push, Reset, Synchronize, Finish."
+        },
+        {
+            q: "Mục đích của kỹ thuật Steganography (Giấu tin) là gì?",
+            a: ["Mã hóa nội dung", "Nén dữ liệu", "Che giấu sự tồn tại của thông tin (nhúng vào ảnh/nhạc)", "Kiểm tra toàn vẹn"],
+            correct: 2,
+            desc: "Làm cho người khác không biết là có thông tin bí mật đang được gửi đi."
+        },
+        {
+            q: "Trong tấn công/do thám dựa trên TTL (như Traceroute), khi Router nhận gói tin có TTL=0, nó sẽ gửi lại gì?",
+            a: ["ICMP Echo Reply", "ICMP Time Exceeded", "TCP Reset", "Không phản hồi"],
+            correct: 1,
+            hasImage: true,
+            imageType: "ttl_attack",
+            desc: "Router báo gói tin đã hết hạn sống (TTL=0) và gửi thông báo lỗi về nguồn."
+        },
+        {
+            q: "Hình vẽ mô tả hacker đứng giữa, bắt được Session ID và dùng nó để truy cập Web Server thay cho nạn nhân. Đây là:",
+            a: ["Phishing", "Session Hijacking", "DDoS", "SQL Injection"],
+            correct: 1,
+            hasImage: true,
+            imageType: "session_hijack",
+            desc: "Hacker đánh cắp 'chìa khóa phiên' (Session ID) để mạo danh."
+        },
+        {
+            q: "Nhiều gói tin TCP được gửi với các cờ URG, PSH, FIN được bật cùng lúc. Đây là kỹ thuật quét nào?",
+            a: ["SYN Scan", "Xmas Scan", "Null Scan", "Connect Scan"],
+            correct: 1,
+            desc: "Gói tin bật nhiều cờ như cây thông Noel (Christmas Tree)."
+        },
+        {
+            q: "Công cụ Nmap, Netcraft kết hợp với Sock Chains / SSL Proxy để làm gì?",
+            a: ["Tăng tốc mạng", "Thực hiện tấn công/do thám và che giấu danh tính (Evasion)", "Vá lỗ hổng", "Quản trị mạng"],
+            correct: 1,
+            desc: "Proxy giúp ẩn IP nguồn khi dùng các tool quét như Nmap."
+        },
+        {
+            q: "Chiến lược bảo mật sử dụng nhiều lớp bảo vệ (Physical -> Network -> Host -> App) gọi là:",
+            a: ["Security through Obscurity", "Defense in Depth (Phòng thủ chiều sâu)", "Single Point of Failure", "Least Privilege"],
+            correct: 1,
+            desc: "Bảo vệ tầng tầng lớp lớp."
+        },
+        {
+            q: "Mục đích chính của trường TTL (Time To Live) trong gói tin IP là gì?",
+            a: ["Đo thời gian", "Chống gói tin bị lặp vô hạn (Loop prevention)", "Mã hóa", "Định danh"],
+            correct: 1,
+            desc: "Giảm dần qua mỗi Router, về 0 thì hủy để tránh lặp vòng tròn."
+        },
+        {
+            q: "Hacker tận dụng tính năng ADS (Alternate Data Streams) trên NTFS để làm gì?",
+            a: ["Tăng tốc độ", "Giấu tệp tin độc hại 'đằng sau' tệp tin hợp lệ", "Phá hủy ổ cứng", "Leo thang đặc quyền"],
+            correct: 1,
+            desc: "ADS cho phép gắn dữ liệu ẩn vào file mà không đổi kích thước hiển thị."
+        },
+        {
+            q: "Mobile-based Social Engineering (SE) thường bao gồm các hình thức nào?",
+            a: ["SQL Injection", "Smishing (SMS) và Vishing (Voice)", "Buffer Overflow", "Bluejacking"],
+            correct: 1,
+            desc: "Lừa đảo qua tin nhắn và cuộc gọi."
+        },
+        {
+            q: "Biện pháp tốt nhất để bảo vệ thông tin khi dùng Wifi công cộng là gì?",
+            a: ["Trình duyệt ẩn danh", "Sử dụng VPN", "Tắt màn hình", "Chỉ vào web tin tức"],
+            correct: 1,
+            desc: "VPN mã hóa luồng dữ liệu, ngăn nghe lén."
+        },
+        {
+            q: "Kỹ thuật nào sau đây KHÔNG được coi là nghe lén điện tử (Sniffing)?",
+            a: ["ARP Poisoning", "MAC Flooding", "Shoulder Surfing (Nhìn trộm)", "DHCP Starvation"],
+            correct: 2,
+            desc: "Shoulder Surfing là tấn công vật lý bằng mắt thường."
+        },
+        {
+            q: "Để che giấu các tệp tin và tiến trình độc hại khỏi hệ điều hành, hacker sử dụng:",
+            a: ["Spyware", "Rootkit", "Virus", "Worm"],
+            correct: 1,
+            desc: "Rootkit can thiệp sâu vào kernel để ẩn mình."
+        },
+        {
+            q: "Nghi ngờ bị Trojan, Antivirus không thấy, Port 6000 đang mở. Làm gì tiếp theo?",
+            a: ["Khởi động lại", "Dùng netstat/TCPView xem tiến trình chiếm Port 6000", "Vệ sinh phần cứng", "Đổi IP"],
+            correct: 1,
+            desc: "Xác định file thực thi nào đang mở cổng lạ để phân tích."
+        },
+        {
+            q: "Công cụ nào KHÔNG thuộc nhóm bẻ khóa mật khẩu (Password Cracking)?",
+            a: ["John the Ripper", "Cain & Abel", "Nmap", "Hydra"],
+            correct: 2,
+            desc: "Nmap là công cụ quét mạng (Scanner)."
+        },
+        {
+            q: "Nghe lén trong phạm vi cực gần (vài cm), liên quan đến thẻ từ/thanh toán gọi là:",
+            a: ["Wifi Sniffing", "NFC Sniffing", "Bluetooth Sniffing", "Phishing"],
+            correct: 1,
+            desc: "NFC (Near Field Communication) là giao tiếp trường gần."
+        },
+        {
+            q: "Kỹ thuật giấu văn bản bí mật vào trong một tập tin hình ảnh gọi là:",
+            a: ["Cryptography", "Steganography", "Hashing", "Compression"],
+            correct: 1,
+            desc: "Kỹ thuật giấu tin (Steganography)."
+        },
+        {
+            q: "Kỹ thuật nào là Non-Electronic Attack (Phi điện tử)?",
+            a: ["Phishing Email", "Dumpster Diving (Lục thùng rác)", "DDoS", "Malware"],
+            correct: 1,
+            desc: "Tìm kiếm thông tin từ rác thải (vật lý)."
+        },
+        {
+            q: "Hoạt động nào KHÔNG phải là Passive Footprinting (Do thám thụ động)?",
+            a: ["Google Search", "Whois", "Xem tin tuyển dụng", "Ping trực tiếp vào máy chủ mục tiêu"],
+            correct: 3,
+            desc: "Ping là tương tác trực tiếp (Active)."
+        },
+        {
+            q: "Loại mã độc nào tự lan truyền qua mạng mà không cần người dùng kích hoạt?",
+            a: ["Virus", "Worm (Sâu máy tính)", "Trojan", "Spyware"],
+            correct: 1,
+            desc: "Worm tự nhân bản qua mạng."
+        },
+        {
+            q: "Loại tấn công nào mã hóa dữ liệu và đòi tiền chuộc?",
+            a: ["Adware", "Ransomware", "Botnet", "Keylogger"],
+            correct: 1,
+            desc: "Ransom (tiền chuộc) + Software."
+        },
+        {
+            q: "Phần mềm nổi tiếng dùng để quét lỗ hổng bảo mật (Vulnerability Scanner)?",
+            a: ["Nessus", "Wireshark", "Metasploit", "Snort"],
+            correct: 0,
+            desc: "Nessus là chuẩn công nghiệp để quét lỗ hổng."
+        },
+        {
+            q: "Trình tự đúng của tấn công chiếm phiên (Session Hijacking)?",
+            a: ["Monitor -> Sniff -> Hijack -> Desync", "Sniff -> Monitor -> Desynchronize -> Hijack", "Hijack -> Sniff -> ...", "Desync -> Monitor ..."],
+            correct: 1,
+            desc: "Nghe lén -> Theo dõi -> Ngắt người thật -> Cướp quyền."
+        },
+        {
+            q: "Phép tính 500,000 x 200 x 24 x 8 thường dùng ước lượng gì?",
+            a: ["Thời gian crack pass", "Dung lượng Log hoặc Băng thông", "Số lượng virus", "Thiệt hại"],
+            correct: 1,
+            desc: "User * dung lượng * thời gian * bit/byte = Tổng tải."
+        },
+        {
+            q: "Lý do chính khiến Session Hijacking dễ thành công?",
+            a: ["Server Linux", "Session ID không mã hóa (clear text)", "Hacker giỏi", "Mạng nhanh"],
+            correct: 1,
+            desc: "Nếu ID truyền đi rõ ràng, hacker dễ dàng bắt được."
+        },
+        {
+            q: "Firewall truyền thống yếu thế nhất trước loại tấn công nào?",
+            a: ["Port Scanning", "Tấn công Web App qua Port 80/443", "IP Spoofing", "Ping of Death"],
+            correct: 1,
+            desc: "Firewall phải mở cổng web, hacker lợi dụng đường này để tấn công ứng dụng."
+        },
+        {
+            q: "Công cụ mạnh mẽ trong việc Footprinting, vẽ sơ đồ từ dữ liệu mở?",
+            a: ["Maltego", "Notepad", "Calculator", "Paint"],
+            correct: 0,
+            desc: "Maltego chuyên thu thập và vẽ biểu đồ liên kết."
+        },
+        {
+            q: "Hình vẽ mô tả kẻ tấn công nối vào đường truyền nhưng chỉ 'lắng nghe' (biểu tượng tai/mắt), không gửi gói tin. Đây là:",
+            a: ["Active Sniffing", "Passive Sniffing", "DoS", "Phishing"],
+            correct: 1,
+            hasImage: true,
+            imageType: "passive_sniff",
+            desc: "Thu thập thụ động, không tương tác."
+        },
+        {
+            q: "Trong sơ đồ mạng, Honeypot nên đặt ở đâu để phát hiện tấn công từ Internet sớm nhất?",
+            a: ["Server nội bộ", "Vùng DMZ", "Máy Admin", "Ngoài Cloud"],
+            correct: 1,
+            hasImage: true,
+            imageType: "honeypot_dmz",
+            desc: "DMZ là vùng đệm tiếp xúc Internet, nơi tốt nhất để đặt bẫy."
+        }
+    ];
+
+    let currentQIndex = 0;
+    const qText = document.getElementById('question-text');
+    const optionsArea = document.getElementById('options-area');
+    const explanation = document.getElementById('explanation');
+    const explanationText = document.getElementById('explanation-text');
+    const nextBtn = document.getElementById('next-btn');
+    const currentQSpan = document.getElementById('current-q');
+    const diagramArea = document.getElementById('diagram-area');
+    const progressBar = document.getElementById('progress-bar');
+
+    function getSVG(type) {
+        if (type === "session_hijack") {
+            return `
+            <svg width="450" height="200" viewBox="0 0 450 200" xmlns="http://www.w3.org/2000/svg">
+                <rect x="30" y="100" width="60" height="40" rx="4" fill="#64748b"/>
+                <text x="60" y="125" text-anchor="middle" fill="white">Victim</text>
+                <rect x="360" y="100" width="60" height="40" rx="4" fill="#3b82f6"/>
+                <text x="390" y="125" text-anchor="middle" fill="white">Server</text>
+                <rect x="195" y="20" width="60" height="40" rx="4" fill="#ef4444"/>
+                <text x="225" y="45" text-anchor="middle" fill="white">Hacker</text>
+                
+                <line x1="90" y1="120" x2="360" y2="120" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,5"/>
+                
+                <path d="M 150 120 Q 180 80 225 60" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-red)"/>
+                <text x="140" y="90" fill="#ef4444" font-size="11">Steal Session ID</text>
+                
+                <path d="M 255 60 Q 300 80 360 110" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-red)"/>
+                <text x="290" y="70" fill="#ef4444" font-size="11">Access as Victim</text>
+                
+                <defs>
+                    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
+                    </marker>
+                </defs>
+            </svg>`;
+        } else if (type === "ttl_attack") {
+             return `
+            <svg width="450" height="150" viewBox="0 0 450 150" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="60" width="50" height="30" fill="#64748b" rx="4"/>
+                <text x="45" y="80" text-anchor="middle" fill="white">PC</text>
+                
+                <circle cx="225" cy="75" r="20" fill="#f59e0b"/>
+                <text x="225" y="80" text-anchor="middle" fill="white" font-size="10">Router</text>
+                
+                <path d="M 70 75 L 200 75" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-gray)"/>
+                <text x="135" y="65" fill="#64748b" font-size="10">Packet (TTL=1)</text>
+                
+                <path d="M 205 85 L 75 85" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-red-sm)"/>
+                <text x="135" y="105" fill="#ef4444" font-size="10">ICMP Time Exceeded</text>
+
+                <defs>
+                    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#64748b" /></marker>
+                    <marker id="arrow-red-sm" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ef4444" /></marker>
+                </defs>
+            </svg>`;
+        } else if (type === "passive_sniff") {
+            return `
+            <svg width="450" height="150" viewBox="0 0 450 150" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="70" width="50" height="30" fill="#64748b" rx="4"/>
+                <text x="45" y="90" text-anchor="middle" fill="white">A</text>
+                
+                <rect x="380" y="70" width="50" height="30" fill="#64748b" rx="4"/>
+                <text x="405" y="90" text-anchor="middle" fill="white">B</text>
+                
+                <line x1="70" y1="85" x2="380" y2="85" stroke="#334155" stroke-width="3"/>
+                
+                <rect x="200" y="110" width="50" height="30" fill="#ef4444" rx="4"/>
+                <text x="225" y="130" text-anchor="middle" fill="white" font-size="10">Sniffer</text>
+                
+                <line x1="225" y1="85" x2="225" y2="110" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="3,3"/>
+                
+                <circle cx="225" cy="70" r="12" stroke="#ef4444" fill="white" stroke-width="2"/>
+                <circle cx="225" cy="70" r="4" fill="#ef4444"/>
+                <text x="225" y="45" text-anchor="middle" fill="#ef4444" font-size="11">Only Listening</text>
+            </svg>`;
+        } else if (type === "honeypot_dmz") {
+            return `
+            <svg width="450" height="150" viewBox="0 0 450 150" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10,75 Q30,50 50,75 T90,75" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                <text x="50" y="95" text-anchor="middle" font-size="10">Internet</text>
+                
+                <rect x="110" y="55" width="10" height="40" fill="#ef4444"/>
+                <text x="115" y="110" text-anchor="middle" font-size="9">FW</text>
+                
+                <rect x="140" y="40" width="120" height="70" fill="#e2e8f0" rx="4"/>
+                <text x="200" y="125" text-anchor="middle" font-weight="bold" fill="#64748b">DMZ</text>
+                
+                <rect x="170" y="60" width="60" height="30" fill="#f59e0b" rx="2" stroke="#b45309"/>
+                <text x="200" y="80" text-anchor="middle" fill="white" font-size="10">Honeypot</text>
+                
+                <rect x="280" y="55" width="10" height="40" fill="#ef4444"/>
+                 <text x="285" y="110" text-anchor="middle" font-size="9">FW</text>
+
+                <rect x="320" y="50" width="100" height="50" fill="#dcfce7" rx="4"/>
+                <text x="370" y="80" text-anchor="middle" fill="#166534">Internal Net</text>
+                
+                <line x1="90" y1="75" x2="110" y2="75" stroke="#94a3b8"/>
+                <line x1="120" y1="75" x2="280" y2="75" stroke="#94a3b8"/>
+                <line x1="290" y1="75" x2="320" y2="75" stroke="#94a3b8"/>
+            </svg>`;
+        }
+        return "";
+    }
+
+    function loadQuestion() {
+        const q = questions[currentQIndex];
+        currentQSpan.innerText = currentQIndex + 1;
+        progressBar.style.width = ((currentQIndex) / questions.length) * 100 + "%";
+        
+        qText.innerText = q.q;
+        
+        if (q.hasImage) {
+            diagramArea.innerHTML = getSVG(q.imageType);
+            diagramArea.style.display = 'flex';
+        } else {
+            diagramArea.innerHTML = '';
+            diagramArea.style.display = 'none';
+        }
+
+        optionsArea.innerHTML = '';
+        explanation.style.display = 'none';
+        nextBtn.disabled = true;
+
+        // Tạo nút đáp án
+        q.a.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<strong>${String.fromCharCode(65 + index)}.</strong> ${opt}`;
+            btn.onclick = () => checkAnswer(index, q.correct, q.desc, btn);
+            optionsArea.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIndex, correctIndex, desc, clickedBtn) {
+        const buttons = optionsArea.querySelectorAll('.option-btn');
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (selectedIndex === correctIndex) {
+            clickedBtn.classList.add('correct');
+        } else {
+            clickedBtn.classList.add('wrong');
+            buttons[correctIndex].classList.add('correct');
+        }
+
+        explanationText.innerText = desc;
+        explanation.style.display = 'block';
+        nextBtn.disabled = false;
+        
+        progressBar.style.width = ((currentQIndex + 1) / questions.length) * 100 + "%";
+    }
+
+    function nextQuestion() {
+        if (currentQIndex < questions.length - 1) {
+            currentQIndex++;
+            loadQuestion();
+        } else {
+            alert("Chúc mừng! Bạn đã hoàn thành 40 câu hỏi.");
+            resetQuiz();
+        }
+    }
+
+    function resetQuiz() {
+        currentQIndex = 0;
+        loadQuestion();
+    }
+
+    // Start
+    loadQuestion();
+</script>
+
+</body>
+</html>
