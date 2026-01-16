@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 6 (Social Engineering)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 6: Các kỹ thuật xã hội (Social Engineering)</h1>
+        <p class="subtitle">Human-based, Computer-based, Mobile-based & Countermeasures</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/55</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/55
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 55 câu hỏi cho Chương 6 - Social Engineering
+    const quizData = [
+        // --- PHẦN 1: KHÁI NIỆM & CÁC GIAI ĐOẠN (Slide 4-8) ---
+        { 
+            q: "Social Engineering (Kỹ nghệ xã hội) là gì?", 
+            options: ["Nghệ thuật lập trình máy tính", "Nghệ thuật thuyết phục mọi người tiết lộ thông tin bí mật", "Kỹ thuật tấn công mạng dùng virus", "Kỹ năng quản lý nhân sự"], 
+            correct: 1, 
+            explanation: "Slide 4: Social engineering is the art of convincing people to reveal confidential information."
+        },
+        { 
+            q: "Tại sao Social Engineering lại thành công?", 
+            options: ["Vì hệ thống máy tính quá yếu", "Dựa trên thực tế là con người thường không nhận thức được giá trị của thông tin mình nắm giữ và bất cẩn trong việc bảo vệ nó", "Vì hacker quá thông minh", "Vì không có tường lửa"], 
+            correct: 1, 
+            explanation: "Slide 4: Social engineers depend on the fact that people are unaware of their valuable information and are careless."
+        },
+        { 
+            q: "Hậu quả nào sau đây KHÔNG phải là tác động trực tiếp của tấn công Social Engineering đối với tổ chức?", 
+            options: ["Tổn thất kinh tế", "Mất quyền riêng tư", "Hỏng phần cứng do quá nhiệt", "Kiện tụng và mất uy tín"], 
+            correct: 2, 
+            explanation: "Slide 4 liệt kê: Economic Losses, Lawsuits, Loss of Privacy, Damage of Goodwill... Hỏng phần cứng vật lý do nhiệt không phải là mục tiêu chính."
+        },
+        { 
+            q: "Yếu tố nào góp phần tạo điều kiện cho Social Engineering xảy ra?", 
+            options: ["Đào tạo bảo mật không đầy đủ (Insufficient Security Training)", "Truy cập thông tin quá dễ dàng", "Thiếu chính sách bảo mật", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 5: Factors include Insufficient Security Training, Lack of Security Policies, Easy Access of Information..."
+        },
+        { 
+            q: "Giai đoạn đầu tiên trong một cuộc tấn công Social Engineering là gì?", 
+            options: ["Select Victim (Chọn nạn nhân)", "Research on Target Company (Nghiên cứu mục tiêu)", "Develop Relationship (Phát triển mối quan hệ)", "Exploit the Relationship (Khai thác)"], 
+            correct: 1, 
+            explanation: "Slide 7: Phase 1: Research on Target Company (Dumpster diving, scanning website, etc.)."
+        },
+        { 
+            q: "Trong giai đoạn 'Develop Relationship' (Phát triển mối quan hệ), hacker làm gì?", 
+            options: ["Thu thập thông tin từ rác", "Tạo dựng lòng tin với mục tiêu thông qua sự tương đồng hoặc giao tiếp", "Tấn công máy chủ", "Xóa dấu vết"], 
+            correct: 1, 
+            explanation: "Slide 8: Develop Relationship: Create rapport, build trust..."
+        },
+
+        // --- PHẦN 2: HUMAN-BASED SOCIAL ENGINEERING (Slide 10-23) ---
+        { 
+            q: "Kỹ thuật 'Impersonation' (Mạo danh) là gì?", 
+            options: ["Giả làm người khác (nhân viên giao hàng, nhân viên kỹ thuật...) để lừa nạn nhân", "Gửi email giả mạo", "Tấn công từ chối dịch vụ", "Ăn cắp điện thoại"], 
+            correct: 0, 
+            explanation: "Slide 10: Impersonation - Pretending to be someone else (legitimate user, employee, etc.)."
+        },
+        { 
+            q: "Eavesdropping (Nghe lén) trong Social Engineering là hành động gì?", 
+            options: ["Nghe lén cuộc hội thoại, đọc tin nhắn... mà không được phép", "Ghi âm cuộc gọi hợp pháp", "Nghe nhạc", "Họp trực tuyến"], 
+            correct: 0, 
+            explanation: "Slide 12: Eavesdropping - Unauthorized listening of conversations, reading of messages."
+        },
+        { 
+            q: "Shoulder Surfing là kỹ thuật gì?", 
+            options: ["Lướt sóng trên vai", "Nhìn trộm qua vai người khác để lấy thông tin (mật khẩu, mã PIN) trên màn hình hoặc bàn phím", "Tấn công wifi", "Gửi tin nhắn rác"], 
+            correct: 1, 
+            explanation: "Slide 13: Shoulder Surfing - Looking over someone's shoulder to get information such as passwords, PINs."
+        },
+        { 
+            q: "Dumpster Diving (Bới rác) nhằm mục đích gì?", 
+            options: ["Tìm đồ ăn", "Tìm kiếm các tài liệu quan trọng (hóa đơn, danh bạ, mã nguồn...) bị vứt bỏ trong thùng rác", "Dọn dẹp vệ sinh", "Tìm thiết bị cũ"], 
+            correct: 1, 
+            explanation: "Slide 14: Dumpster Diving - Looking for treasure in someone else's trash (phone bills, contact lists, source code)."
+        },
+        { 
+            q: "Reverse Social Engineering là gì?", 
+            options: ["Nạn nhân tấn công lại hacker", "Hacker tạo ra một vấn đề (phá hoại), sau đó nạn nhân tự tìm đến hacker để nhờ giúp đỡ, từ đó hacker lấy được thông tin", "Kỹ thuật xã hội đảo ngược quy trình", "Không tồn tại"], 
+            correct: 1, 
+            explanation: "Slide 15: Attacker creates a problem -> Victim asks for help -> Attacker extracts info."
+        },
+        { 
+            q: "Ba bước chính của Reverse Social Engineering là gì?", 
+            options: ["Sabotage (Phá hoại) -> Marketing (Quảng cáo) -> Support (Hỗ trợ)", "Research -> Select -> Exploit", "Scan -> Attack -> Clear tracks", "Login -> Copy -> Logout"], 
+            correct: 0, 
+            explanation: "Slide 15: Sabotage (gây lỗi) -> Marketing (quảng cáo mình là người sửa được) -> Support (nạn nhân nhờ sửa -> lấy info)."
+        },
+        { 
+            q: "Piggybacking (Đi nhờ) khác với Tailgating (Bám đuôi) ở điểm nào?", 
+            options: ["Piggybacking: Người được ủy quyền BIẾT và CHO PHÉP người lạ đi cùng; Tailgating: Người lạ bám theo MÀ KHÔNG CÓ sự đồng ý/biết của người ủy quyền", "Tailgating là đi nhờ xe", "Hai khái niệm giống hệt nhau", "Piggybacking dùng cho mạng wifi"], 
+            correct: 0, 
+            explanation: "Slide 16: Piggybacking - authorized person allows (holds door). Tailgating - unauthorized person follows without consent (fake ID badge)."
+        },
+        { 
+            q: "Một kẻ tấn công mặc đồng phục nhân viên kỹ thuật giả mạo và đeo thẻ ID giả để lẻn vào khu vực an ninh. Đây là ví dụ của kỹ thuật nào?", 
+            options: ["Tailgating", "Dumpster Diving", "Phishing", "Vishing"], 
+            correct: 0, 
+            explanation: "Slide 16: Tailgating implies access to a building... unauthorized person follows authorized person (often using fake ID)."
+        },
+        { 
+            q: "Vishing (Voice Phishing) sử dụng phương tiện gì để lừa đảo?", 
+            options: ["Email", "Điện thoại (Voice over IP - VoIP)", "Tin nhắn SMS", "Mạng xã hội"], 
+            correct: 1, 
+            explanation: "Slide 21: Vishing - Voice Phishing (using phone/VoIP)."
+        },
+        { 
+            q: "Kỹ thuật nào lợi dụng sự tò mò hoặc tham lam của người dùng bằng cách giả làm nhân viên hỗ trợ kỹ thuật?", 
+            options: ["Impersonation on Help Desk / Tech Support", "Shoulder Surfing", "Pharming", "Spim"], 
+            correct: 0, 
+            explanation: "Slide 10: Impersonation - Help Desk personnel."
+        },
+
+        // --- PHẦN 3: COMPUTER-BASED SOCIAL ENGINEERING (Slide 24-36) ---
+        { 
+            q: "Phishing (Lừa đảo qua mạng) thường liên quan đến hành động gì?", 
+            options: ["Gửi email giả mạo trông giống như từ một nguồn hợp pháp để lừa người dùng cung cấp thông tin cá nhân", "Tấn công vật lý", "Nghe lén điện thoại", "Bới rác"], 
+            correct: 0, 
+            explanation: "Slide 24: Phishing - sending an email that falsely claims to be from a legitimate enterprise."
+        },
+        { 
+            q: "Spear Phishing khác Phishing thông thường ở điểm nào?", 
+            options: ["Spear Phishing nhắm vào một cá nhân hoặc tổ chức cụ thể (Targeted)", "Spear Phishing gửi cho hàng triệu người", "Spear Phishing chỉ dùng SMS", "Spear Phishing không nguy hiểm"], 
+            correct: 0, 
+            explanation: "Slide 27: Spear Phishing - focused on a specific person or organization (targeted)."
+        },
+        { 
+            q: "Whaling (Săn cá voi) là hình thức Phishing nhắm vào đối tượng nào?", 
+            options: ["Nhân viên bình thường", "Những người có vị trí cao, quan trọng (C-level executives, politicians, celebrities)", "Học sinh sinh viên", "Người nội trợ"], 
+            correct: 1, 
+            explanation: "Slide 28: Whaling - targets high profile individuals (CEOs, politicians)."
+        },
+        { 
+            q: "Pharming (Canh tác) là kỹ thuật tấn công gì?", 
+            options: ["Chuyển hướng lưu lượng truy cập từ trang web hợp pháp sang trang web giả mạo (thường bằng cách đầu độc DNS)", "Trồng trọt online", "Gửi thư rác", "Tấn công Facebook"], 
+            correct: 0, 
+            explanation: "Slide 29: Pharming - redirects users to a fake webpage even when they type the correct address."
+        },
+        { 
+            q: "Spim là thuật ngữ chỉ điều gì?", 
+            options: ["Spam qua Email", "Spam qua Instant Messaging (IM)", "Spam qua SMS", "Spam qua thư tay"], 
+            correct: 1, 
+            explanation: "Slide 30: Spim - Spam over Instant Messaging."
+        },
+        { 
+            q: "Kỹ thuật 'Pop-up Windows Attacks' hoạt động như thế nào?", 
+            options: ["Hiển thị cửa sổ bật lên yêu cầu thông tin đăng nhập hoặc lừa người dùng cài đặt phần mềm độc hại", "Tắt màn hình", "Mở file Word", "Chụp ảnh màn hình"], 
+            correct: 0, 
+            explanation: "Slide 6: Social Engineered Click-jacking / Pop-up windows asking for login."
+        },
+        { 
+            q: "Mục đích của 'Instant Chat Messenger' trong tấn công xã hội là gì?", 
+            options: ["Kết bạn bốn phương", "Thu thập thông tin cá nhân qua trò chuyện trực tuyến", "Học ngoại ngữ", "Nghe nhạc"], 
+            correct: 1, 
+            explanation: "Slide 32: Gathering personal information via Chat."
+        },
+
+        // --- PHẦN 4: MOBILE-BASED SOCIAL ENGINEERING (Slide 37-40) ---
+        { 
+            q: "Smishing là sự kết hợp của những gì?", 
+            options: ["SMS và Phishing", "Smart và Phishing", "Small và Phishing", "Smile và Phishing"], 
+            correct: 0, 
+            explanation: "Slide 40: Smishing - SMS Phishing."
+        },
+        { 
+            q: "Một kỹ thuật tấn công phổ biến trên di động là 'Repackaging'. Nó là gì?", 
+            options: ["Đóng gói lại điện thoại để bán", "Lấy một ứng dụng hợp pháp, chèn mã độc vào rồi đóng gói lại và phát hành", "Tạo vỏ ốp lưng điện thoại", "Cài lại hệ điều hành"], 
+            correct: 1, 
+            explanation: "Slide 38: Repackaging legitimate apps - Infecting legitimate apps with malware."
+        },
+        { 
+            q: "Fake Security Applications (Ứng dụng bảo mật giả mạo) trên di động thường làm gì?", 
+            options: ["Diệt virus thật", "Báo cáo sai về tình trạng nhiễm virus để lừa người dùng trả tiền hoặc tải phần mềm độc hại", "Tăng tốc điện thoại", "Tiết kiệm pin"], 
+            correct: 1, 
+            explanation: "Slide 39: Fake Security Applications - Mimic legit apps... trick users."
+        },
+        { 
+            q: "Publishing Malicious Apps (Xuất bản ứng dụng độc hại) là kỹ thuật gì?", 
+            options: ["Đăng ứng dụng lên App Store/Google Play với chức năng hấp dẫn nhưng chứa mã độc", "Viết sách về ứng dụng", "Xóa ứng dụng", "Chặn ứng dụng"], 
+            correct: 0, 
+            explanation: "Slide 37: Publishing malicious apps... typically attractive apps."
+        },
+
+        // --- PHẦN 5: INSIDER THREATS (Slide 41-43) ---
+        { 
+            q: "Insider Threat (Mối đe dọa nội bộ) đến từ đâu?", 
+            options: ["Hacker nước ngoài", "Nhân viên hoặc người dùng được ủy quyền bên trong tổ chức", "Virus máy tính", "Lỗi phần mềm"], 
+            correct: 1, 
+            explanation: "Slide 41: Insider Attack... performed by a trusted person (employee)."
+        },
+        { 
+            q: "Loại nhân viên nội bộ nào nguy hiểm nhất vì họ cố tình gây hại để trả thù hoặc kiếm lợi?", 
+            options: ["Malicious Insider (Disgruntled employee)", "Negligent Insider (Nhân viên bất cẩn)", "Professional Insider", "Compromised Insider"], 
+            correct: 0, 
+            explanation: "Slide 42: Malicious Insider - Disgruntled or terminated employee who steals data or destroys systems."
+        },
+        { 
+            q: "Negligent Insider (Nhân viên bất cẩn) gây hại như thế nào?", 
+            options: ["Cố tình phá hoại", "Vô tình làm lộ thông tin hoặc nhiễm virus do thiếu hiểu biết/không tuân thủ quy trình (Uneducated)", "Bán dữ liệu cho đối thủ", "Viết mã độc"], 
+            correct: 1, 
+            explanation: "Slide 42: Negligent Insider - Uneducated on security threats... accidentally compromises system."
+        },
+        { 
+            q: "Professional Insider là ai?", 
+            options: ["Nhân viên chuyên nghiệp", "Hacker được thuê để thâm nhập vào công ty làm nhân viên nhằm mục đích tấn công", "Giám đốc", "Bảo vệ"], 
+            correct: 1, 
+            explanation: "Slide 42: Professional Insider - using the job to break into the network."
+        },
+        { 
+            q: "Lý do phổ biến khiến nhân viên trở thành 'Malicious Insider' là gì?", 
+            options: ["Financial Gain (Lợi ích tài chính)", "Revenge (Trả thù)", "Steal confidential data (Ăn cắp dữ liệu mật)", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 43: Reasons include Financial Gain, Steal confidential data, Revenge..."
+        },
+
+        // --- PHẦN 6: IMPERSONATION & IDENTITY THEFT (Slide 44-50) ---
+        { 
+            q: "Rủi ro chính của việc sử dụng mạng xã hội (Social Networking) đối với doanh nghiệp là gì?", 
+            options: ["Nhân viên làm việc chăm chỉ hơn", "Lộ thông tin nhạy cảm, dễ bị mạo danh, giảm năng suất", "Tăng doanh thu", "Bảo mật tốt hơn"], 
+            correct: 1, 
+            explanation: "Slide 46: Risks include Data theft, involuntary data leakage, targeted attacks..."
+        },
+        { 
+            q: "Identity Theft (Trộm cắp danh tính) là gì?", 
+            options: ["Mất chứng minh thư", "Tội phạm đánh cắp thông tin nhận dạng cá nhân (PII) của người khác để giả mạo họ nhằm mục đích gian lận", "Mất điện thoại", "Quên mật khẩu"], 
+            correct: 1, 
+            explanation: "Slide 47: Identity theft occurs when someone steals your PII to commit fraud."
+        },
+        { 
+            q: "Thông tin nào sau đây được coi là PII (Personally Identifiable Information)?", 
+            options: ["Tên, ngày sinh, số CMND/SSN, số thẻ tín dụng", "Tên con mèo", "Màu sắc yêu thích", "Tên nhân vật game"], 
+            correct: 0, 
+            explanation: "Slide 47: Name, DOB, Driver's License, Credit card number..."
+        },
+        { 
+            q: "Quy trình trộm cắp danh tính thường trải qua các giai đoạn nào?", 
+            options: ["Discovery -> Action -> Trial", "Login -> Logout -> Shutdown", "Search -> Destroy -> Hide", "Ask -> Get -> Run"], 
+            correct: 0, 
+            explanation: "Slide 49: Process: 1. Discovery (Gain info) -> 2. Action (Verification) -> 3. Trial (Commit crime)."
+        },
+
+        // --- PHẦN 7: BIỆN PHÁP PHÒNG CHỐNG & PEN TESTING (Slide 51-54) ---
+        { 
+            q: "Biện pháp phòng chống Social Engineering hiệu quả nhất liên quan đến yếu tố con người là gì?", 
+            options: ["Cài nhiều phần mềm diệt virus", "Đào tạo và nâng cao nhận thức bảo mật cho nhân viên (Training and Awareness)", "Cấm dùng Internet", "Tắt hết máy tính"], 
+            correct: 1, 
+            explanation: "Slide 51: Countermeasures -> Training (Insufficient training is a key factor - Slide 5)."
+        },
+        { 
+            q: "Chính sách bảo mật (Security Policy) nên bao gồm điều gì để chống Social Engineering?", 
+            options: ["Quy định về mật khẩu mạnh, phân loại dữ liệu, kiểm soát truy cập vật lý", "Cho phép chia sẻ mật khẩu", "Không cần ID badge", "Cho phép vứt tài liệu mật vào thùng rác"], 
+            correct: 0, 
+            explanation: "Slide 51: Policies include Password policy, Physical security policy..."
+        },
+        { 
+            q: "Trong 'Social Engineering Pen Testing' qua Email, người kiểm thử có thể làm gì?", 
+            options: ["Gửi email giả mạo yêu cầu thông tin nhạy cảm để xem nhân viên có phản hồi không", "Tấn công DDoS server mail", "Xóa email của nhân viên", "Đổi mật khẩu server"], 
+            correct: 0, 
+            explanation: "Slide 52: Send emails instructing users to update info/reset password... check if they click."
+        },
+        { 
+            q: "Trong 'Social Engineering Pen Testing' qua Điện thoại (Phone), người kiểm thử có thể làm gì?", 
+            options: ["Gọi điện giả làm đồng nghiệp hoặc bộ phận hỗ trợ kỹ thuật (Help Desk) để xin thông tin", "Gọi điện trêu chọc", "Bán hàng qua điện thoại", "Hát qua điện thoại"], 
+            correct: 0, 
+            explanation: "Slide 53: Call a target posing as a colleague/tech support..."
+        },
+        { 
+            q: "Trong 'Social Engineering Pen Testing' trực tiếp (In Person), kỹ thuật nào có thể được sử dụng?", 
+            options: ["Tailgating (Bám đuôi vào cửa), lục thùng rác, nhìn trộm mật khẩu", "Đánh nhau với bảo vệ", "Phá cửa", "Trèo tường"], 
+            correct: 0, 
+            explanation: "Slide 54: Try to tailgate, Befriend employees, Shoulder surfing..."
+        },
+        { 
+            q: "Mục đích cuối cùng của việc thực hiện Social Engineering Pen Testing là gì?", 
+            options: ["Để sa thải nhân viên", "Để tìm ra điểm yếu trong nhận thức của nhân viên và quy trình bảo mật, từ đó cải thiện", "Để lấy tiền của công ty", "Để nổi tiếng"], 
+            correct: 1, 
+            explanation: "Mục đích chung của Pen Test là tìm lỗ hổng để khắc phục (Document findings - Slide 54)."
+        },
+        { 
+            q: "Để chống lại Dumpster Diving, tổ chức nên làm gì?", 
+            options: ["Sử dụng máy hủy tài liệu (Shredder) cho các giấy tờ quan trọng trước khi vứt bỏ", "Vứt rác ra xa", "Đốt rác trong văn phòng", "Giấu rác dưới gầm bàn"], 
+            correct: 0, 
+            explanation: "Biện pháp tiêu chuẩn chống Dumpster Diving (Proper disposal policy)."
+        },
+        { 
+            q: "Để chống lại Piggybacking/Tailgating, biện pháp nào hiệu quả?", 
+            options: ["Yêu cầu mọi nhân viên đeo thẻ ID và quẹt thẻ khi ra vào, đào tạo nhân viên không giữ cửa cho người lạ", "Mở cửa tự do", "Bỏ bảo vệ", "Dùng cửa gỗ"], 
+            correct: 0, 
+            explanation: "Biện pháp tiêu chuẩn về Physical Security Policy."
+        },
+        { 
+            q: "Nếu nhận được một email thông báo trúng thưởng lớn và yêu cầu click vào link để nhận, đây có thể là dấu hiệu của?", 
+            options: ["May mắn", "Phishing", "Spim", "Vishing"], 
+            correct: 1, 
+            explanation: "Dấu hiệu điển hình của Phishing (Slide 24)."
+        },
+        { 
+            q: "Kỹ thuật nào sử dụng tin nhắn văn bản (SMS) để lừa đảo?", 
+            options: ["Vishing", "Smishing", "Phishing", "Pharming"], 
+            correct: 1, 
+            explanation: "Slide 40: Smishing (SMS Phishing)."
+        },
+        { 
+            q: "Một nhân viên bất mãn (Disgruntled employee) nghỉ việc và xóa sạch dữ liệu dự án. Đây là loại tấn công nào?", 
+            options: ["Insider Threat (Malicious)", "Phishing", "Virus", "Social Engineering bên ngoài"], 
+            correct: 0, 
+            explanation: "Slide 42: Malicious Insider."
+        },
+        { 
+            q: "Tại sao nên hạn chế chia sẻ thông tin cá nhân quá chi tiết trên mạng xã hội?", 
+            options: ["Để tránh bị Identity Theft và Social Engineering", "Để tiết kiệm dung lượng", "Để Facebook không bị chậm", "Để không ai biết mình là ai"], 
+            correct: 0, 
+            explanation: "Slide 46: Risks of Social Networking -> Identity theft."
+        },
+        { 
+            q: "Tấn công Waterhole (Hố nước) - dù không được gọi tên cụ thể trong slide nhưng liên quan đến khái niệm nào đã học?", 
+            options: ["Compromised Legitimate Websites (Slide 6)", "Phishing", "Vishing", "Smishing"], 
+            correct: 0, 
+            explanation: "Slide 6: Compromised Legitimate Websites - Host vulnerabilities... (Tương tự cơ chế Waterhole)."
+        },
+        { 
+            q: "Một hacker gọi điện cho nhân viên, tự xưng là sếp lớn và yêu cầu mật khẩu gấp. Hắn đang lợi dụng nguyên tắc tâm lý nào?", 
+            options: ["Authority (Quyền lực/Uy quyền)", "Scarcity (Khan hiếm)", "Liking (Thiện cảm)", "Social Proof (Bằng chứng xã hội)"], 
+            correct: 0, 
+            explanation: "Slide 53: Threaten the target... Call posing as an important user (Authority)."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 45) msgEl.innerText = "Xuất sắc! Bạn rất am hiểu về Social Engineering.";
+        else if (score >= 35) msgEl.innerText = "Khá tốt! Hãy cẩn thận hơn với các thuật ngữ.";
+        else msgEl.innerText = "Bạn cần đọc kỹ lại slide để nắm chắc kiến thức.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

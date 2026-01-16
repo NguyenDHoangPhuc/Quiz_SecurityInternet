@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 3 (System Hacking)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 3: Tấn công hệ thống (System Hacking)</h1>
+        <p class="subtitle">Password Cracking, Privilege Escalation, Steganography, Covering Tracks</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/60</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/60
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 60 câu hỏi cho Chương 3 - Tấn công hệ thống
+    const quizData = [
+        // --- PHẦN 1: MỤC ĐÍCH & CÁC BƯỚC TẤN CÔNG (Slide 3-5) ---
+        { 
+            q: "Mục đích chính của giai đoạn 'Gaining Access' (Chiếm quyền truy cập) là gì?", 
+            options: ["Để xóa dấu vết", "Vượt qua các kiểm soát truy cập để xâm nhập vào hệ thống", "Leo thang đặc quyền", "Ẩn giấu file"], 
+            correct: 1, 
+            explanation: "Slide 4: Gaining Access - To bypass access controls to gain access to the system."
+        },
+        { 
+            q: "Kỹ thuật nào thường được sử dụng trong giai đoạn 'Escalating Privileges' (Leo thang đặc quyền)?", 
+            options: ["Clearing logs", "Password cracking & Exploiting known system vulnerabilities", "Rootkits", "Steganography"], 
+            correct: 1, 
+            explanation: "Slide 4: Escalating Privileges uses techniques like Password cracking and Exploiting known system vulnerabilities."
+        },
+        { 
+            q: "Mục đích của việc sử dụng Rootkits và Steganography trong System Hacking là gì?", 
+            options: ["Hiding Files (Ẩn file và hành vi độc hại)", "Covering Tracks (Xóa dấu vết)", "Executing Applications (Chạy ứng dụng)", "Gaining Access (Chiếm quyền)"], 
+            correct: 0, 
+            explanation: "Slide 4: Hiding Files - To hide attackers malicious activities and data theft (Rootkits, steganography)."
+        },
+        { 
+            q: "Sắp xếp đúng trình tự các bước System Hacking?", 
+            options: ["Cracking Passwords -> Escalating Privileges -> Executing Applications -> Hiding Files -> Covering Tracks", "Scanning -> Hiding Files -> Cracking Passwords", "Covering Tracks -> Escalating Privileges -> Cracking Passwords", "Executing Applications -> Cracking Passwords -> Hiding Files"], 
+            correct: 0, 
+            explanation: "Slide 5 (Sơ đồ): Cracking Passwords -> Escalating Privileges -> Executing Applications -> Hiding Files -> Covering Tracks."
+        },
+
+        // --- PHẦN 2: PASSWORD CRACKING (Slide 6-47) ---
+        { 
+            q: "Loại tấn công mật khẩu nào KHÔNG sử dụng thiết bị điện tử (Non-Electronic Attack)?", 
+            options: ["Dictionary Attack", "Shoulder Surfing (Nhìn trộm)", "Brute Force", "Sniffing"], 
+            correct: 1, 
+            explanation: "Slide 10: Non-Electronic Attacks bao gồm Shoulder surfing, Social Engineering, Dumpster diving."
+        },
+        { 
+            q: "Trong 'Active Online Attacks', kẻ tấn công thực hiện hành động gì?", 
+            options: ["Nghe lén gói tin trên mạng (Sniffing)", "Giao tiếp trực tiếp với hệ thống đích để đoán mật khẩu (Dictionary/Brute-force)", "Sử dụng Rainbow Table", "Tìm kiếm trong thùng rác"], 
+            correct: 1, 
+            explanation: "Slide 10 & 11: Active Online Attacks (Dictionary, Brute-force, Hash injection) tương tác trực tiếp với hệ thống."
+        },
+        { 
+            q: "Hình thức tấn công nào sử dụng danh sách các từ có sẵn để đoán mật khẩu?", 
+            options: ["Brute Force Attack", "Dictionary Attack", "Rainbow Table", "Hybrid Attack"], 
+            correct: 1, 
+            explanation: "Slide 31: Dictionary Attack uses a dictionary file... loaded into a cracking application."
+        },
+        { 
+            q: "Tấn công 'Brute Force' là gì?", 
+            options: ["Thử tất cả các tổ hợp ký tự có thể cho đến khi tìm ra mật khẩu", "Chỉ thử các từ trong từ điển", "Sử dụng bảng băm tính sẵn", "Lừa đảo người dùng"], 
+            correct: 0, 
+            explanation: "Slide 32: Brute Force Attack tries every combination of characters until the password is broken."
+        },
+        { 
+            q: "Cơ sở dữ liệu SAM (Security Accounts Manager) trong Windows được lưu trữ tại đường dẫn nào?", 
+            options: ["C:\\Windows\\System32\\drivers\\etc", "C:\\Windows\\System32\\config\\SAM", "C:\\Windows\\System\\SAM", "C:\\SAM\\config"], 
+            correct: 1, 
+            explanation: "Slide 16: File SAM được lưu tại %systemroot%\\system32\\config\\SAM."
+        },
+        { 
+            q: "Thuật toán băm LM (LAN Manager) có điểm yếu lớn nhất là gì?", 
+            options: ["Nó mã hóa toàn bộ mật khẩu thành một chuỗi duy nhất", "Nó chia mật khẩu thành các khối 7 ký tự và không phân biệt chữ hoa/thường", "Nó sử dụng salt (muối) để tăng độ khó", "Nó quá chậm"], 
+            correct: 1, 
+            explanation: "Slide 21: Passwords are split into two 7-character chunks... Not case sensitive (Không phân biệt hoa thường, chia nhỏ 7 ký tự)."
+        },
+        { 
+            q: "NTLM (NT LAN Manager) authentication sử dụng thuật toán băm nào?", 
+            options: ["MD5", "SHA-1", "MD4", "AES"], 
+            correct: 2, 
+            explanation: "Slide 22: NTLM uses the MD4 encryption algorithm."
+        },
+        { 
+            q: "Kerberos Authentication là giao thức xác thực mặc định cho hệ thống nào?", 
+            options: ["Windows Standalone", "Windows Active Directory (Domain)", "Linux", "MacOS"], 
+            correct: 1, 
+            explanation: "Slide 24: Kerberos is the default authentication method for Windows domains (Active Directory)."
+        },
+        { 
+            q: "Salt (Muối) trong mật khẩu là gì?", 
+            options: ["Là một chuỗi ngẫu nhiên được thêm vào mật khẩu trước khi băm", "Là mật khẩu của admin", "Là tên file chứa mật khẩu", "Là công cụ crack mật khẩu"], 
+            correct: 0, 
+            explanation: "Slide 28: Salt is a random string of data... added to the password before hashing."
+        },
+        { 
+            q: "Mục đích chính của việc sử dụng Salt là gì?", 
+            options: ["Làm cho mật khẩu ngắn hơn", "Chống lại tấn công Dictionary và Rainbow Table (vì phải tính lại băm cho mỗi salt)", "Giúp người dùng dễ nhớ mật khẩu", "Tăng tốc độ đăng nhập"], 
+            correct: 1, 
+            explanation: "Slide 28: Defeats pre-computed hash attacks (Rainbow Tables) and forces re-computation."
+        },
+        { 
+            q: "Rainbow Table là gì?", 
+            options: ["Bảng chứa các mật khẩu phổ biến", "Bảng chứa các giá trị băm (hash) đã được tính toán trước (Precomputed hashes)", "Bảng màu sắc dùng trong Steganography", "Danh sách IP của victim"], 
+            correct: 1, 
+            explanation: "Slide 34: Rainbow table is a table of precomputed hashes... used to speed up password cracking."
+        },
+        { 
+            q: "Microsoft quy định mật khẩu mặc định thường có đặc điểm gì?", 
+            options: ["Luôn là '123456'", "Thường chứa tên công ty", "Được thiết lập bởi nhà sản xuất và thường giống nhau trên các thiết bị cùng loại", "Rất khó đoán"], 
+            correct: 2, 
+            explanation: "Slide 12: Default passwords are provided by manufacturers... often easier to guess."
+        },
+        { 
+            q: "Công cụ nào sau đây KHÔNG phải là công cụ Password Cracking?", 
+            options: ["Cain & Abel", "John the Ripper", "Ophcrack", "Nmap"], 
+            correct: 3, 
+            explanation: "Nmap là công cụ quét mạng. Các công cụ còn lại (Slide 37, 38, 39) đều là Password Crackers."
+        },
+        { 
+            q: "L0phtCrack là công cụ chuyên dùng để làm gì?", 
+            options: ["Quét virus", "Khôi phục mật khẩu Windows (Auditing and recovery)", "Tấn công DoS", "Ẩn file"], 
+            correct: 1, 
+            explanation: "Slide 40: L0phtCrack is a password auditing and recovery application."
+        },
+        { 
+            q: "Kỹ thuật 'Hybrid Attack' trong bẻ khóa mật khẩu hoạt động như thế nào?", 
+            options: ["Chỉ dùng Brute force", "Thay thế số và ký tự đặc biệt vào các từ trong từ điển (Ví dụ: pass -> p@ss)", "Sử dụng Rainbow Table", "Tấn công vật lý"], 
+            correct: 1, 
+            explanation: "Slide 33: Hybrid attack substitutes numbers and symbols to the dictionary words."
+        },
+        { 
+            q: "Active Online Attack thường khó thực hiện hơn Offline Attack vì lý do gì?", 
+            options: ["Yêu cầu máy cấu hình mạnh", "Dễ bị phát hiện bởi cơ chế khóa tài khoản (Account Lockout) và tường lửa", "Cần có file SAM", "Không thể thực hiện qua Internet"], 
+            correct: 1, 
+            explanation: "Slide 11: Active online attacks... easy to detect, account lockout policies may trigger."
+        },
+        { 
+            q: "Tấn công 'Man-in-the-Middle' (MITM) thuộc loại tấn công mật khẩu nào?", 
+            options: ["Passive Online Attack", "Active Online Attack", "Offline Attack", "Non-electronic Attack"], 
+            correct: 0, 
+            explanation: "Slide 11: Passive Online Attacks include Sniffing, Man-in-the-Middle, Replay attack."
+        },
+
+        // --- PHẦN 3: ESCALATING PRIVILEGES (Slide 48-61) ---
+        { 
+            q: "Leo thang đặc quyền (Privilege Escalation) là gì?", 
+            options: ["Chuyển từ tài khoản User thường lên tài khoản Admin/System", "Đổi mật khẩu người dùng", "Xóa tài khoản người dùng", "Tạo tài khoản khách"], 
+            correct: 0, 
+            explanation: "Slide 49: Attacker gains access... tries to obtain higher-level privileges (admin/system)."
+        },
+        { 
+            q: "Leo thang đặc quyền ngang (Horizontal Privilege Escalation) là gì?", 
+            options: ["Chiếm quyền admin", "Truy cập vào tài nguyên của người dùng khác cùng cấp độ quyền hạn", "Truy cập vào kernel", "Xâm nhập từ mạng ngoài vào mạng trong"], 
+            correct: 1, 
+            explanation: "Slide 50: Horizontal... attacker acquires the privileges of another user who has the same level of access."
+        },
+        { 
+            q: "Leo thang đặc quyền dọc (Vertical Privilege Escalation) là gì?", 
+            options: ["Truy cập tài khoản người dùng khác cùng cấp", "Nâng quyền từ thấp lên cao (ví dụ: User -> Admin)", "Di chuyển từ máy này sang máy khác", "Tấn công vào database"], 
+            correct: 1, 
+            explanation: "Slide 50: Vertical... attacker grants himself higher privileges (e.g., user to admin)."
+        },
+        { 
+            q: "Kỹ thuật DLL Hijacking lợi dụng điều gì để leo thang đặc quyền?", 
+            options: ["Lỗi tràn bộ đệm", "Thứ tự tìm kiếm DLL của ứng dụng (nếu không chỉ định đường dẫn đầy đủ, ứng dụng sẽ tìm DLL độc hại trong thư mục hiện tại)", "Lỗ hổng SQL Injection", "Mật khẩu yếu"], 
+            correct: 1, 
+            explanation: "Slide 56: DLL Hijacking exploits the way Windows searches for DLLs... creating a malicious DLL in the application directory."
+        },
+        { 
+            q: "Để bảo vệ chống lại DLL Hijacking, lập trình viên nên làm gì?", 
+            options: ["Không sử dụng DLL", "Luôn sử dụng đường dẫn tuyệt đối (Absolute path) khi gọi DLL", "Tắt tính năng SafeDllSearchMode", "Chạy ứng dụng với quyền User"], 
+            correct: 1, 
+            explanation: "Biện pháp phòng chống DLL Hijacking (suy luận từ nguyên lý): Chỉ định rõ đường dẫn DLL."
+        },
+        { 
+            q: "Specter và Meltdown là các lỗ hổng liên quan đến thành phần nào?", 
+            options: ["Phần mềm ứng dụng", "Hệ điều hành", "Vi xử lý (Hardware vulnerability)", "Trình duyệt web"], 
+            correct: 2, 
+            explanation: "Slide 58 đề cập đến Hardware vulnerabilities (Specter/Meltdown)."
+        },
+        { 
+            q: "Lỗi 'Misconfiguration' (Cấu hình sai) phổ biến dẫn đến leo thang đặc quyền là gì?", 
+            options: ["Đặt mật khẩu quá dài", "Quyền truy cập file/thư mục không chặt chẽ (Weak file/folder permissions)", "Cập nhật Windows thường xuyên", "Sử dụng tường lửa"], 
+            correct: 1, 
+            explanation: "Slide 59: Misconfigurations... e.g., Weak permissions on service executables."
+        },
+
+        // --- PHẦN 4: EXECUTING APPLICATIONS (Slide 62-79) ---
+        { 
+            q: "Sau khi chiếm quyền admin, hacker thường cài đặt gì để duy trì quyền truy cập (Maintaining Access)?", 
+            options: ["Antivirus", "Backdoors, Trojans, Spyware", "Office", "Firewall"], 
+            correct: 1, 
+            explanation: "Slide 63: Executing applications... Trojans, Backdoors, Spyware, Keyloggers."
+        },
+        { 
+            q: "Keylogger là gì?", 
+            options: ["Phần mềm ghi lại mọi phím bấm của người dùng (Keystrokes)", "Phần mềm khóa bàn phím", "Phần mềm mở khóa màn hình", "Phần mềm vẽ đồ thị"], 
+            correct: 0, 
+            explanation: "Slide 66: Keylogger... records every keystroke made to a log file."
+        },
+        { 
+            q: "Keylogger phần cứng (Hardware Keylogger) thường được gắn ở đâu?", 
+            options: ["Trong CPU", "Giữa bàn phím và cổng kết nối máy tính", "Trên màn hình", "Trong ổ cứng"], 
+            correct: 1, 
+            explanation: "Slide 68 (Hình ảnh minh họa): Hardware Keylogger gắn nối tiếp vào cổng bàn phím (USB/PS2)."
+        },
+        { 
+            q: "Spyware khác với Keylogger ở điểm nào?", 
+            options: ["Spyware chỉ ghi phím bấm", "Spyware thu thập nhiều loại thông tin hơn (lịch sử web, email, thông tin hệ thống...) chứ không chỉ phím bấm", "Spyware vô hại", "Spyware là phần cứng"], 
+            correct: 1, 
+            explanation: "Slide 72: Spyware monitors user behavior, collects personal info, redirects browsers... (rộng hơn Keylogger)."
+        },
+        { 
+            q: "PDQ Deploy là công cụ có thể bị lạm dụng để làm gì trong tấn công?", 
+            options: ["Quét virus", "Triển khai/Chạy phần mềm từ xa (Remote execution)", "Bẻ khóa mật khẩu", "Ẩn file"], 
+            correct: 1, 
+            explanation: "Slide 64: PDQ Deploy... allow executing malicious codes remotely."
+        },
+        { 
+            q: "RemoteExec là công cụ dùng để làm gì?", 
+            options: ["Cài đặt ứng dụng, thực thi chương trình trên máy từ xa (Remote installation/execution)", "Chụp ảnh màn hình", "Ghi âm", "Tấn công DDoS"], 
+            correct: 0, 
+            explanation: "Slide 64: RemoteExec... remotely install applications, execute programs."
+        },
+        { 
+            q: "Loại Spyware nào thường đi kèm với phần mềm miễn phí (Freeware) để hiển thị quảng cáo?", 
+            options: ["Adware", "Trojan", "Rootkit", "Worm"], 
+            correct: 0, 
+            explanation: "Adware là Spyware thiên về quảng cáo (Kiến thức cơ bản trong ngữ cảnh Spyware - Slide 72)."
+        },
+
+        // --- PHẦN 5: HIDING FILES (Slide 80-101) ---
+        { 
+            q: "Rootkit là gì?", 
+            options: ["Một loại virus phá hoại dữ liệu", "Phần mềm được thiết kế để ẩn sự tồn tại của các tiến trình, file và hành vi độc hại khỏi hệ điều hành", "Công cụ bẻ khóa mật khẩu", "Phần mềm diệt virus"], 
+            correct: 1, 
+            explanation: "Slide 81: Rootkits are programs designed to obscure the fact that a system has been compromised... hide processes, files."
+        },
+        { 
+            q: "Rootkit hoạt động ở cấp độ Kernel (Ring 0) nguy hiểm hơn cấp độ User (Ring 3) vì sao?", 
+            options: ["Vì nó dễ cài đặt hơn", "Vì nó có quyền cao nhất, có thể can thiệp trực tiếp vào hệ điều hành và khó bị phát hiện bởi antivirus thông thường", "Vì nó chạy chậm hơn", "Vì nó chỉ hoạt động trên Linux"], 
+            correct: 1, 
+            explanation: "Slide 83 & 84: Kernel level rootkits run in Ring 0 (highest privilege)... harder to detect."
+        },
+        { 
+            q: "NTFS Alternate Data Streams (ADS) là tính năng của hệ thống file NTFS cho phép điều gì?", 
+            options: ["Nén file", "Ẩn dữ liệu phía sau một file khác (stream) mà không làm thay đổi kích thước hiển thị của file gốc", "Mã hóa file", "Xóa file vĩnh viễn"], 
+            correct: 1, 
+            explanation: "Slide 88: ADS allows data to be stored in hidden streams linked to a file... file size doesn't change visible."
+        },
+        { 
+            q: "Lệnh nào dùng để tạo một ADS ẩn nội dung vào file 'readme.txt'?", 
+            options: ["notepad readme.txt", "notepad readme.txt:hidden.txt", "type hidden.txt > readme.txt", "attrib +h readme.txt"], 
+            correct: 1, 
+            explanation: "Slide 90: `notepad readme.txt:secret.txt` (Cú pháp `filename:streamname`)."
+        },
+        { 
+            q: "Công cụ nào được dùng để phát hiện NTFS ADS?", 
+            options: ["LADS (Locate Alternate Data Streams)", "Notepad", "Calculator", "Paint"], 
+            correct: 0, 
+            explanation: "Slide 93: Tools used to detect ADS: LADS, Streams.exe, Sfind."
+        },
+        { 
+            q: "Steganography (Giấu tin) khác với Cryptography (Mã hóa) ở điểm nào?", 
+            options: ["Steganography làm cho dữ liệu không thể đọc được", "Steganography ẩn sự tồn tại của dữ liệu (người khác không biết có tin nhắn ẩn)", "Steganography dùng chìa khóa", "Hai khái niệm là một"], 
+            correct: 1, 
+            explanation: "Slide 96: Steganography hides the existence of the message. Cryptography scrambles the message."
+        },
+        { 
+            q: "Kỹ thuật 'Least Significant Bit' (LSB) trong Steganography hoạt động như thế nào?", 
+            options: ["Thay thế bit quan trọng nhất của ảnh", "Thay thế bit ít quan trọng nhất (bit cuối) của mỗi điểm ảnh để giấu dữ liệu mà mắt thường khó nhận ra sự thay đổi", "Nén ảnh", "Đổi định dạng ảnh"], 
+            correct: 1, 
+            explanation: "Slide 100: LSB... modifies the last bit of the byte... difficult for human eye to detect."
+        },
+        { 
+            q: "Trong Steganography, 'Carrier' hay 'Cover object' là gì?", 
+            options: ["Tin nhắn cần giấu", "File vật chủ (ảnh, âm thanh...) dùng để chứa tin nhắn ẩn", "Mật khẩu giải mã", "Người nhận tin"], 
+            correct: 1, 
+            explanation: "Slide 98: Carrier (Cover) is the signal/stream/file in which the payload is hidden."
+        },
+        { 
+            q: "Công cụ nào dùng để thực hiện Steganography (Giấu tin)?", 
+            options: ["Snow", "ImageSteganography", "StegHide", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 104, 105: Liệt kê các công cụ như Snow, ImageSteganography, BlindSide..."
+        },
+        { 
+            q: "White Space Steganography là kỹ thuật giấu tin vào đâu?", 
+            options: ["Vào khoảng trắng (space/tab) cuối dòng trong văn bản ASCII", "Vào file ảnh trắng", "Vào file âm thanh", "Vào file video"], 
+            correct: 0, 
+            explanation: "Slide 103: White Space Steganography... creating hidden messages in ASCII text by adding white spaces."
+        },
+
+        // --- PHẦN 6: COVERING TRACKS (Slide 119-125) ---
+        { 
+            q: "Tại sao hacker cần thực hiện 'Covering Tracks' (Xóa dấu vết)?", 
+            options: ["Để giải phóng dung lượng ổ cứng", "Để tránh bị phát hiện bởi quản trị viên và hệ thống giám sát, đồng thời duy trì quyền truy cập", "Để máy chạy nhanh hơn", "Để cài lại Win"], 
+            correct: 1, 
+            explanation: "Slide 120: To hide evidence of compromise... avoid detection... maintain access."
+        },
+        { 
+            q: "Lệnh nào sau đây dùng để tắt tính năng Auditing (Ghi nhật ký) trên Windows?", 
+            options: ["auditpol /set /subcategory:\"logon\" /success:disable", "net stop audit", "sc delete eventlog", "del C:\\Windows\\Logs"], 
+            correct: 0, 
+            explanation: "Slide 121: `auditpol /set /category:\"system\" /success:disable` (hoặc subcategory tương tự)."
+        },
+        { 
+            q: "Để xóa các sự kiện trong Event Viewer bằng dòng lệnh, hacker có thể dùng lệnh nào?", 
+            options: ["wevtutil cl [LogName]", "del eventlog", "erase logs", "clear logs"], 
+            correct: 0, 
+            explanation: "Lệnh chuẩn trong Windows để clear log là `wevtutil cl System/Security/Application` (Kiến thức thực tế bổ sung cho Slide 122 - Clearing logs)."
+        },
+        { 
+            q: "MRU (Most Recently Used) lists là gì và tại sao hacker cần xóa nó?", 
+            options: ["Danh sách người dùng mới nhất", "Danh sách các file/ứng dụng vừa được truy cập gần đây (lưu trong Registry), cần xóa để ẩn hành vi", "Danh sách virus", "Danh sách mật khẩu"], 
+            correct: 1, 
+            explanation: "Slide 125: MRU lists contain list of recently visited files... attackers clear them to hide activity."
+        },
+        { 
+            q: "Công cụ nào có thể giúp xóa dấu vết (Wiper tool)?", 
+            options: ["CCleaner", "Wipe", "ClearLogs.exe", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 124, 125 đề cập đến việc dùng tool để clear logs và MRU."
+        },
+
+        // --- PHẦN 7: PENETRATION TESTING & KHÁC ---
+        { 
+            q: "Trong kiểm thử xâm nhập (Penetration Testing), bước nào được thực hiện SAU KHI đã leo thang đặc quyền?", 
+            options: ["Scanning", "Executing Applications", "Footprinting", "Reconnaissance"], 
+            correct: 1, 
+            explanation: "Theo quy trình System Hacking (Slide 5): Escalating Privileges -> Executing Applications."
+        },
+        { 
+            q: "Active Password Cracking bao gồm kỹ thuật nào?", 
+            options: ["Rainbow Table", "Distributed Network Attack (DNA)", "Sniffing", "Shoulder Surfing"], 
+            correct: 1, 
+            explanation: "Slide 36: Distributed Network Attack uses processing power of multiple machines (Active/Offline technique depending on context, DNA is typically heavy computation)."
+        },
+        { 
+            q: "Một rủi ro của việc sử dụng 'Automatic Password Cracking' là gì?", 
+            options: ["Nhanh chóng", "Có thể làm khóa tài khoản (Account Lockout) nếu hệ thống có chính sách bảo mật", "Luôn thành công", "Không bị phát hiện"], 
+            correct: 1, 
+            explanation: "Slide 11: Account lockout policies may trigger after few failed attempts."
+        },
+        { 
+            q: "Bootkit là biến thể của Rootkit tấn công vào đâu?", 
+            options: ["File Word", "Master Boot Record (MBR) hoặc VBR", "Trình duyệt web", "RAM"], 
+            correct: 1, 
+            explanation: "Slide 85: Boot Loader Level Rootkits (Bootkit) replace the original boot loader/MBR."
+        },
+        { 
+            q: "Sử dụng lệnh `clear` trong Linux hoặc `cls` trong Windows có thực sự xóa dấu vết không?", 
+            options: ["Có, xóa hoàn toàn", "Không, chỉ xóa màn hình hiển thị, log file vẫn còn", "Chỉ xóa log file", "Làm hỏng hệ thống"], 
+            correct: 1, 
+            explanation: "Kiến thức cơ bản: `cls`/`clear` chỉ làm sạch màn hình terminal, không xóa dấu vết trong file log hệ thống (Covering Tracks)."
+        },
+        { 
+            q: "Phòng chống Keylogger phần cứng bằng cách nào?", 
+            options: ["Cài Antivirus", "Kiểm tra vật lý các cổng kết nối bàn phím", "Sử dụng tường lửa", "Đổi mật khẩu thường xuyên"], 
+            correct: 1, 
+            explanation: "Slide 68: Hardware keyloggers are physical devices, need physical inspection to detect."
+        },
+        { 
+            q: "Image Steganography thường lợi dụng tính chất nào của mắt người?", 
+            options: ["Không phân biệt được sự thay đổi nhỏ về màu sắc (ví dụ thay đổi bit cuối)", "Không nhìn thấy màu đỏ", "Chỉ nhìn thấy đen trắng", "Nhìn thấy mọi chi tiết"], 
+            correct: 0, 
+            explanation: "Slide 100 (LSB): Human eye cannot detect the difference in the image."
+        },
+        { 
+            q: "Để phòng chống Password Cracking, biện pháp nào hiệu quả nhất?", 
+            options: ["Sử dụng mật khẩu ngắn", "Sử dụng mật khẩu mạnh (phức tạp), đổi thường xuyên và xác thực đa yếu tố (2FA)", "Viết mật khẩu ra giấy", "Dùng chung mật khẩu"], 
+            correct: 1, 
+            explanation: "Biện pháp phòng thủ cơ bản (Countermeasures)."
+        },
+        { 
+            q: "File 'SAM' được hệ điều hành Windows bảo vệ như thế nào khi máy đang chạy?", 
+            options: ["Có thể copy thoải mái", "Bị khóa bởi hệ thống (Locked), không thể copy/đọc trực tiếp", "Được mã hóa bằng RSA", "Lưu trên Cloud"], 
+            correct: 1, 
+            explanation: "Slide 16: SAM file is locked when Windows is running (cần dùng tool hoặc copy từ Repair folder/Volume Shadow Copy)."
+        },
+        { 
+            q: "Công cụ 'StreamArmor' dùng để làm gì?", 
+            options: ["Tấn công DDoS", "Phát hiện và xóa các dòng dữ liệu ẩn (ADS) nguy hiểm", "Tạo Rootkit", "Bẻ khóa Wifi"], 
+            correct: 1, 
+            explanation: "Kiến thức về ADS Tools (bổ sung cho Slide 93): StreamArmor là công cụ phát hiện ADS."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 54) msgEl.innerText = "Tuyệt vời! Bạn đã nắm vững các kỹ thuật tấn công hệ thống.";
+        else if (score >= 40) msgEl.innerText = "Khá tốt! Hãy ôn lại phần Password Cracking và Steganography.";
+        else msgEl.innerText = "Bạn cần đọc kỹ lại slide để nắm chắc kiến thức.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

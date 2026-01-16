@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 2.2 (Scanning)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 2.2: Quét hệ thống mạng (Network Scanning)</h1>
+        <p class="subtitle">Trắc nghiệm tương tác - ĐH Công nghệ Thông tin (UIT)</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/50</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/50
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu câu hỏi cho Chương 2.2 - Thăm dò và quét hệ thống mạng
+    const quizData = [
+        { 
+            q: "Scanning (Quét hệ thống) được định nghĩa là gì?", 
+            options: ["Là quá trình xâm nhập vào hệ thống để lấy dữ liệu", "Là một tập hợp các thủ tục để xác định các host, port và dịch vụ đang hoạt động trong mạng", "Là quá trình xóa dấu vết sau khi tấn công", "Là quá trình lừa đảo nhân viên để lấy mật khẩu"], 
+            correct: 1, 
+            explanation: "Slide 3: Scanning refers to a set of procedures for identifying hosts, ports, and services in a network."
+        },
+        { 
+            q: "Bước đầu tiên trong phương pháp luận quét hệ thống (Scanning Methodology) là gì?", 
+            options: ["Check for Open Ports (Kiểm tra cổng mở)", "Banner Grabbing (Lấy thông tin OS)", "Check for Live Systems (Kiểm tra máy đang hoạt động)", "Scan for Vulnerability (Quét lỗ hổng)"], 
+            correct: 2, 
+            explanation: "Slide 5: Bước 1 là 'Check for Live Systems' (Kiểm tra xem hệ thống có đang hoạt động hay không)."
+        },
+        { 
+            q: "Quá trình bắt tay 3 bước (Three-Way Handshake) của TCP diễn ra theo thứ tự nào?", 
+            options: ["SYN -> ACK -> SYN/ACK", "SYN -> SYN/ACK -> ACK", "ACK -> SYN -> FIN", "SYN -> FIN -> ACK"], 
+            correct: 1, 
+            explanation: "Slide 8: Client gửi SYN -> Server gửi SYN/ACK -> Client gửi ACK."
+        },
+        { 
+            q: "Cờ (Flag) nào trong gói tin TCP được sử dụng để bắt đầu một kết nối?", 
+            options: ["FIN", "RST", "SYN", "PSH"], 
+            correct: 2, 
+            explanation: "Slide 7: SYN (Synchronize) - Notify transmission of a new sequence number (Bắt đầu kết nối)."
+        },
+        { 
+            q: "Cờ PSH (Push) trong TCP có ý nghĩa gì?", 
+            options: ["Yêu cầu thiết lập lại kết nối", "Yêu cầu bên nhận đẩy dữ liệu lên ứng dụng ngay lập tức mà không cần chờ bộ đệm đầy", "Đánh dấu kết thúc truyền dữ liệu", "Xác nhận gói tin đã nhận"], 
+            correct: 1, 
+            explanation: "Slide 7: PSH (Push) - Receiver should pass data to the application (without buffering)."
+        },
+        { 
+            q: "Công cụ nào được mệnh danh là 'Vua của các công cụ quét' (King of scanners)?", 
+            options: ["Nmap", "Hping2", "Wireshark", "Nessus"], 
+            correct: 0, 
+            explanation: "Dựa trên sự phổ biến và các lệnh được giới thiệu xuyên suốt slide (VD: Slide 22, 23, 29), Nmap là công cụ quan trọng nhất."
+        },
+        { 
+            q: "Kỹ thuật 'Ping Sweep' được sử dụng để làm gì?", 
+            options: ["Để làm ngập lụt mạng (Flood network)", "Để xác định các máy đang hoạt động (Live hosts) trong một dải IP", "Để quét các cổng mở trên một máy chủ", "Để bẻ khóa mật khẩu Wifi"], 
+            correct: 1, 
+            explanation: "Slide 12: Ping sweep is used to determine the live hosts from a range of IP addresses."
+        },
+        { 
+            q: "Gói tin ICMP Echo Request thuộc loại (Type) và mã (Code) nào?", 
+            options: ["Type 8, Code 0", "Type 0, Code 0", "Type 3, Code 13", "Type 11, Code 0"], 
+            correct: 0, 
+            explanation: "Slide 10: ICMP Echo Request là Type 8."
+        },
+        { 
+            q: "Nếu tường lửa chặn ICMP Echo Request, kỹ thuật nào có thể được dùng thay thế để phát hiện máy đang hoạt động trong mạng LAN?", 
+            options: ["ARP Ping", "DNS Zone Transfer", "FTP Bounce", "Social Engineering"], 
+            correct: 0, 
+            explanation: "Slide 15: ARP Ping Scan. ARP packet are sent to discover all active devices in the IPv4 range (hiệu quả trong mạng LAN)."
+        },
+        { 
+            q: "Kỹ thuật 'TCP Connect / Full Open Scan' hoạt động như thế nào?", 
+            options: ["Gửi SYN -> Nhận SYN/ACK -> Gửi RST", "Gửi SYN -> Nhận SYN/ACK -> Gửi ACK (Hoàn thành bắt tay 3 bước)", "Gửi FIN -> Nhận RST", "Không gửi cờ nào cả"], 
+            correct: 1, 
+            explanation: "Slide 18: TCP Connect scan establishes a full connection (completes 3-way handshake)."
+        },
+        { 
+            q: "Nhược điểm lớn nhất của 'TCP Connect Scan' là gì?", 
+            options: ["Không chính xác", "Chậm và dễ bị phát hiện (Ghi log trên hệ thống đích)", "Chỉ quét được cổng UDP", "Cần quyền Root"], 
+            correct: 1, 
+            explanation: "Slide 18: It is easily detectable and filterable (dễ bị phát hiện và lọc)."
+        },
+        { 
+            q: "Kỹ thuật 'Stealth Scan' (hoặc Half-open Scan) sử dụng cờ nào để ngắt kết nối trước khi hoàn thành bắt tay 3 bước?", 
+            options: ["FIN", "RST", "ACK", "PSH"], 
+            correct: 1, 
+            explanation: "Slide 19: Gửi SYN -> Nhận SYN/ACK -> Gửi RST (Reset) để ngắt kết nối ngay, không gửi ACK cuối cùng."
+        },
+        { 
+            q: "Trong kỹ thuật 'Inverse TCP Flag Scanning' (như Xmas, Null, Fin), nếu cổng ĐÓNG (Closed), hệ thống đích sẽ phản hồi gì (theo chuẩn RFC 793)?", 
+            options: ["Không phản hồi gì cả", "Gửi gói tin RST (Reset)", "Gửi gói tin SYN/ACK", "Gửi gói tin ICMP Unreachable"], 
+            correct: 1, 
+            explanation: "Slide 20: If the port is closed, the response is RST."
+        },
+        { 
+            q: "Trong 'Xmas Scan', các cờ nào được bật lên trong gói tin gửi đi?", 
+            options: ["SYN, ACK, FIN", "FIN, URG, PUSH", "RST, SYN, FIN", "Chỉ cờ FIN"], 
+            correct: 1, 
+            explanation: "Slide 21: Xmas Scan sets the FIN, URG, and PUSH flags."
+        },
+        { 
+            q: "Nếu gửi một gói tin 'Xmas Scan' tới một cổng MỞ (Open) trên hệ thống Unix/Linux, kết quả nhận được là gì?", 
+            options: ["Nhận gói RST", "Nhận gói SYN/ACK", "Không nhận được phản hồi (No Response)", "Nhận gói ICMP Error"], 
+            correct: 2, 
+            explanation: "Slide 21: If the port is open, there is no response."
+        },
+        { 
+            q: "Kỹ thuật 'Null Scan' gửi gói tin có đặc điểm gì?", 
+            options: ["Tất cả các cờ đều được bật", "Không có cờ nào được bật (No flags set)", "Chỉ bật cờ NULL", "Chỉ bật cờ SYN"], 
+            correct: 1, 
+            explanation: "Slide 24: Null scan sends a packet with no flags set."
+        },
+        { 
+            q: "Lệnh Nmap nào sau đây thực hiện 'Stealth Scan' (Half-open)?", 
+            options: ["nmap -sT", "nmap -sS", "nmap -sX", "nmap -sU"], 
+            correct: 1, 
+            explanation: "Slide 22 (Hình ảnh minh họa lệnh Nmap): -sS là TCP SYN scan (Stealth)."
+        },
+        { 
+            q: "Kỹ thuật 'IDLE/IPID Header Scanning' có ưu điểm gì đặc biệt?", 
+            options: ["Tốc độ quét cực nhanh", "Cho phép kẻ tấn công che giấu hoàn toàn địa chỉ IP bằng cách dùng máy 'Zombie'", "Có thể quét qua mọi tường lửa", "Không cần kết nối mạng"], 
+            correct: 1, 
+            explanation: "Slide 25: Offers complete blind scanning... attackers hides identity behind the zombie."
+        },
+        { 
+            q: "Trong 'UDP Scanning', nếu cổng MỞ (Open), kết quả thường là gì?", 
+            options: ["Nhận gói ACK", "Nhận gói SYN/ACK", "Không có phản hồi (No response)", "Nhận gói ICMP Port Unreachable"], 
+            correct: 2, 
+            explanation: "Slide 31: If the port is open -> No response."
+        },
+        { 
+            q: "Nếu thực hiện UDP Scan và nhận được thông báo 'ICMP Port Unreachable', điều này nghĩa là gì?", 
+            options: ["Cổng đang Mở (Open)", "Cổng đang Đóng (Closed)", "Cổng bị lọc (Filtered)", "Máy chủ không tồn tại"], 
+            correct: 1, 
+            explanation: "Slide 31: If the port is closed -> ICMP Port Unreachable."
+        },
+        { 
+            q: "Giao thức SSDP (Simple Service Discovery Protocol) thường được dùng để phát hiện lỗ hổng trên thiết bị nào?", 
+            options: ["Máy chủ Linux", "Thiết bị UPnP (Universal Plug and Play)", "Máy chủ Web IIS", "Thiết bị di động Android"], 
+            correct: 1, 
+            explanation: "Slide 33: SSDP scanning... detects UPnP vulnerabilities."
+        },
+        { 
+            q: "Kỹ thuật 'List Scanning' trong Nmap hoạt động như thế nào?", 
+            options: ["Quét tất cả các cổng trong danh sách", "Chỉ liệt kê và kiểm tra tên miền/IP mà không thực sự ping hay quét cổng (No Scan)", "Quét danh sách lỗ hổng", "Quét danh sách người dùng"], 
+            correct: 1, 
+            explanation: "Slide 34: List scan simply generates and prints a list of IPs/Names without actually pinging or scanning them."
+        },
+        { 
+            q: "Hping2/Hping3 là công cụ chủ yếu dùng để làm gì?", 
+            options: ["Chỉ để quét cổng", "Tạo và gửi các gói tin ICMP/TCP/UDP tùy chỉnh (Packet Crafting) để kiểm tra tường lửa/IDS", "Bẻ khóa mật khẩu", "Vẽ sơ đồ mạng"], 
+            correct: 1, 
+            explanation: "Slide 36: Hping2 is a command-line oriented TCP/IP packet assembler/analyzer... used for firewall testing, advanced port scanning."
+        },
+        { 
+            q: "Lệnh `hping2 -A 192.168.1.10 -p 80` thực hiện hành động gì?", 
+            options: ["Gửi gói tin SYN đến cổng 80", "Gửi gói tin ACK đến cổng 80 (để kiểm tra Firewall)", "Gửi gói tin FIN đến cổng 80", "Gửi gói tin UDP đến cổng 80"], 
+            correct: 1, 
+            explanation: "Slide 36: `-A` sets the ACK flag."
+        },
+        { 
+            q: "'Banner Grabbing' là kỹ thuật dùng để làm gì?", 
+            options: ["Lấy cờ trong cuộc thi CTF", "Xác định hệ điều hành (OS) và phiên bản dịch vụ đang chạy trên hệ thống đích", "Lấy trộm banner quảng cáo", "Lấy địa chỉ IP"], 
+            correct: 1, 
+            explanation: "Slide 40: Banner grabbing... determines the OS and version of services running."
+        },
+        { 
+            q: "File mở rộng `.pl` trên URL thường cho biết máy chủ web đang chạy hệ điều hành nào?", 
+            options: ["Windows", "Linux/Unix (Perl script)", "MacOS", "Android"], 
+            correct: 1, 
+            explanation: "Slide 41: .pl thường là Perl script, phổ biến trên Linux/Unix servers."
+        },
+        { 
+            q: "Giá trị TTL (Time To Live) trong gói tin phản hồi có thể giúp xác định OS. Giá trị TTL=128 thường là của hệ điều hành nào?", 
+            options: ["Linux", "Windows", "Solaris", "Cisco IOS"], 
+            correct: 1, 
+            explanation: "Slide 42: Windows thường có TTL=128, Linux thường là 64, Solaris là 255."
+        },
+        { 
+            q: "Active Banner Grabbing khác Passive Banner Grabbing ở điểm nào?", 
+            options: ["Active gửi gói tin trực tiếp đến hệ thống để nhận phản hồi, Passive chỉ nghe lén (sniffing)", "Active chậm hơn Passive", "Active khó bị phát hiện hơn Passive", "Active chỉ dùng cho Windows"], 
+            correct: 0, 
+            explanation: "Slide 43: Active OS Fingerprinting sends crafted packets... Passive sniffing packets from the host."
+        },
+        { 
+            q: "Lệnh Nmap nào dùng để nhận diện Hệ điều hành (OS Fingerprinting)?", 
+            options: ["-sS", "-sT", "-O", "-P0"], 
+            correct: 2, 
+            explanation: "Slide 43: Nmap command for OS detection is `-O`."
+        },
+        { 
+            q: "Công cụ nào sau đây là 'Vulnerability Scanner' (Quét lỗ hổng) nổi tiếng?", 
+            options: ["Nessus", "Wireshark", "Putty", "WinSCP"], 
+            correct: 0, 
+            explanation: "Slide 47 liệt kê Nessus, GFI LANGuard... là công cụ Vulnerability Scanning."
+        },
+        { 
+            q: "Mục đích của việc vẽ lược đồ mạng (Drawing Network Diagrams) trong quá trình quét là gì?", 
+            options: ["Để trang trí báo cáo", "Để hiểu đường đi đến mục tiêu và cấu trúc liên kết mạng (topology)", "Để tăng tốc độ mạng", "Để cài đặt driver"], 
+            correct: 1, 
+            explanation: "Slide 50: Network diagrams show the path to the target host... help to understand the position of firewalls, routers."
+        },
+        { 
+            q: "Proxy Server đóng vai trò gì trong việc quét hệ thống?", 
+            options: ["Tăng tốc độ quét", "Làm trung gian để ẩn địa chỉ IP thật của kẻ tấn công", "Chặn virus", "Lưu trữ web"], 
+            correct: 1, 
+            explanation: "Slide 51: Using a proxy server... hides the source IP address so that the attacker can hack anonymously."
+        },
+        { 
+            q: "Kỹ thuật 'Proxy Chaining' là gì?", 
+            options: ["Sử dụng một proxy duy nhất", "Sử dụng nhiều proxy server nối tiếp nhau để tăng độ ẩn danh", "Tấn công vào proxy server", "Kết nối proxy với VPN"], 
+            correct: 1, 
+            explanation: "Slide 52: Proxy chaining typically uses multiple proxy servers... to avoid detection."
+        },
+        { 
+            q: "Công cụ nào hỗ trợ định tuyến lưu lượng qua mạng Tor để ẩn danh?", 
+            options: ["Nmap", "ProxyChains / Tor", "Wireshark", "Netcat"], 
+            correct: 1, 
+            explanation: "Slide 53 đề cập đến Tor và các công cụ ẩn danh như ProxyChains."
+        },
+        { 
+            q: "HTTP Tunneling giúp kẻ tấn công làm gì?", 
+            options: ["Vượt qua tường lửa (Bypass Firewall) bằng cách đóng gói dữ liệu trong giao thức HTTP", "Tăng tốc độ tải web", "Mã hóa dữ liệu ổ cứng", "Quét virus trên web"], 
+            correct: 1, 
+            explanation: "Slide 54: HTTP Tunneling techniques can bypass firewalls... encapsulating data within HTTP traffic."
+        },
+        { 
+            q: "Kỹ thuật 'IP Spoofing' là gì?", 
+            options: ["Ăn cắp IP của người khác", "Thay đổi địa chỉ IP nguồn trong gói tin để giả mạo một máy khác", "Thay đổi IP đích", "Thay đổi địa chỉ MAC"], 
+            correct: 1, 
+            explanation: "Slide 55: IP Spoofing is a technique used to gain unauthorized access... by sending messages with a forged source IP address."
+        },
+        { 
+            q: "Lệnh `nmap -D RND:10 [target]` thực hiện kỹ thuật gì?", 
+            options: ["Quét 10 cổng ngẫu nhiên", "Sử dụng 10 địa chỉ IP giả mạo (Decoy) ngẫu nhiên để che giấu IP thật", "Quét với độ trễ 10 giây", "Tải 10 script ngẫu nhiên"], 
+            correct: 1, 
+            explanation: "Slide 55: `-D` (Decoy) option creates decoys. RND:10 means generate 10 random decoys."
+        },
+        { 
+            q: "Một biện pháp đối phó (Countermeasure) để chống lại việc quét cổng là gì?", 
+            options: ["Mở tất cả các cổng", "Cấu hình tường lửa và IDS để phát hiện và chặn các mẫu thăm dò (probes)", "Tắt máy tính", "Không sử dụng Internet"], 
+            correct: 1, 
+            explanation: "Slide 58: Configure firewall and IDS rules to detect and block probes."
+        },
+        { 
+            q: "Để phòng chống Banner Grabbing, quản trị viên nên làm gì?", 
+            options: ["Công khai phiên bản phần mềm", "Tắt hoặc thay đổi banner mặc định của dịch vụ (Disable/Change default banners)", "Cài đặt thêm nhiều dịch vụ", "Sử dụng Telnet"], 
+            correct: 1, 
+            explanation: "Slide 59: Display false banners... Turn off standard banners."
+        },
+        { 
+            q: "Colasoft Packet Builder được dùng để làm gì?", 
+            options: ["Xây dựng sơ đồ mạng", "Tạo các gói tin mạng tùy chỉnh (Custom network packets) để kiểm tra bảo mật", "Quét virus", "Lưu trữ gói tin"], 
+            correct: 1, 
+            explanation: "Slide 38: Colasoft Packet Builder allows creating custom network packets."
+        },
+        { 
+            q: "MegaPing là một bộ công cụ (Toolkit) bao gồm những tính năng nào?", 
+            options: ["Chỉ Ping", "Quét cổng, quét IP, DNS lookup, Fingerprinting, v.v.", "Chỉ quét virus", "Chỉ bẻ khóa mật khẩu"], 
+            correct: 1, 
+            explanation: "Slide 29: MegaPing includes scanners for IP, Port, NetBIOS, DNS..."
+        },
+        { 
+            q: "Trong quá trình quét, 'Stateful Inspection' trong tường lửa có tác dụng gì?", 
+            options: ["Chặn tất cả gói tin", "Theo dõi trạng thái kết nối và chặn các gói tin không hợp lệ (ví dụ: gói ACK mà không có SYN trước đó)", "Chỉ kiểm tra tiêu đề gói tin", "Tăng tốc độ mạng"], 
+            correct: 1, 
+            explanation: "Liên quan đến các slide về tường lửa/ACK scan: Stateful inspection chặn các gói tin không khớp với trạng thái kết nối hiện tại."
+        },
+        { 
+            q: "Cờ FIN trong TCP được dùng khi nào?", 
+            options: ["Bắt đầu kết nối", "Ngắt kết nối (Finish)", "Đẩy dữ liệu", "Thiết lập lại"], 
+            correct: 1, 
+            explanation: "Slide 7: FIN - No more data from sender (Kết thúc)."
+        },
+        { 
+            q: "Cờ RST (Reset) được gửi khi nào?", 
+            options: ["Khi kết nối thành công", "Khi muốn thiết lập lại kết nối do lỗi hoặc từ chối kết nối", "Khi hoàn tất truyền dữ liệu", "Khi bắt đầu truyền dữ liệu"], 
+            correct: 1, 
+            explanation: "Slide 7: RST - Reset the connection."
+        },
+        { 
+            q: "Lệnh `nmap -sU` dùng để quét loại cổng nào?", 
+            options: ["TCP", "UDP", "ICMP", "IP"], 
+            correct: 1, 
+            explanation: "Slide 22: `-sU` is for UDP Scan."
+        },
+        { 
+            q: "Anonymizer là gì?", 
+            options: ["Người dùng ẩn danh", "Dịch vụ hoặc phần mềm giúp xóa bỏ thông tin định danh (IP) khi lướt web", "Hacker mũ đen", "Một loại virus"], 
+            correct: 1, 
+            explanation: "Slide 56: Anonymizers allow you to surf the web without revealing your IP."
+        },
+        { 
+            q: "Công cụ 'Curports' giúp giám sát điều gì trên máy tính?", 
+            options: ["Giám sát các cổng TCP/UDP đang mở và tiến trình nào đang sử dụng chúng", "Giám sát màn hình", "Giám sát bàn phím", "Giám sát nhiệt độ CPU"], 
+            correct: 0, 
+            explanation: "Slide 28: CurrPorts displays the list of all currently opened TCP/IP and UDP ports."
+        },
+        { 
+            q: "Bước cuối cùng trong quy trình 'Scanning Pen Testing' là gì?", 
+            options: ["Tấn công hệ thống", "Document all the findings (Ghi lại tất cả các phát hiện)", "Cài đặt backdoor", "Xóa log"], 
+            correct: 1, 
+            explanation: "Slide 64: Document all the findings (Là bước cuối cùng trong sơ đồ)."
+        },
+        { 
+            q: "IDLE Scan dựa vào sự tăng trưởng của trường nào trong IP Header của máy Zombie?", 
+            options: ["TTL", "IPID (IP Identification)", "Source IP", "Checksum"], 
+            correct: 1, 
+            explanation: "Slide 25: IPID Scan/IDLE Scan dựa vào việc theo dõi IPID của máy Zombie."
+        },
+        { 
+            q: "Công cụ NetScanTools Pro cung cấp tính năng gì?", 
+            options: ["Chỉ Ping", "Bộ công cụ đa năng: Ping, Traceroute, Port Scanner, Whois...", "Chỉ vẽ biểu đồ", "Chỉ proxy"], 
+            correct: 1, 
+            explanation: "Slide 27: NetScanTools Pro - Automated collection of tools (Ping, Traceroute, Scanner...)."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 45) msgEl.innerText = "Tuyệt vời! Bạn nắm rất vững kiến thức scanning.";
+        else if (score >= 35) msgEl.innerText = "Khá tốt! Hãy ôn lại phần Nmap và các cờ TCP.";
+        else msgEl.innerText = "Bạn cần ôn tập kỹ hơn về các kỹ thuật quét mạng.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

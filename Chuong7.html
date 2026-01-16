@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 7 (DoS/DDoS)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 7: Tấn công từ chối dịch vụ (DoS/DDoS)</h1>
+        <p class="subtitle">Botnets, Flood Attacks, Detection & Prevention</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/55</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/55
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 55 câu hỏi cho Chương 7 - DoS/DDoS
+    const quizData = [
+        // --- PHẦN 1: KHÁI NIỆM & CƠ BẢN (Slide 3-6) ---
+        { 
+            q: "Tấn công DoS (Denial of Service) là gì?", 
+            options: ["Tấn công ăn cắp dữ liệu", "Tấn công làm cho hệ thống hoặc tài nguyên mạng không khả dụng đối với người dùng hợp lệ", "Tấn công thay đổi giao diện web", "Tấn công nghe lén"], 
+            correct: 1, 
+            explanation: "Slide 3: DoS prevents legitimate use of its resources... flood a victim system... to overload its resources."
+        },
+        { 
+            q: "Sự khác biệt chính giữa DoS và DDoS là gì?", 
+            options: ["DDoS dùng 1 máy tấn công, DoS dùng nhiều máy", "DoS dùng 1 máy tấn công, DDoS sử dụng mạng lưới nhiều máy tính (Botnet) để tấn công đồng loạt", "DDoS là tấn công vật lý", "DoS không nguy hiểm bằng Virus"], 
+            correct: 1, 
+            explanation: "Slide 4 (Hình ảnh): DoS (1 Attacker), DDoS (Attacker -> Handler -> Multiple Zombies -> Target)."
+        },
+        { 
+            q: "Triệu chứng nào sau đây là dấu hiệu của một cuộc tấn công DoS?", 
+            options: ["Hiệu suất mạng chậm bất thường", "Nhận được lượng thư rác tăng đột biến", "Không thể truy cập một trang web cụ thể", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 5: Symptoms include Unusually slow network, Dramatic increase in spam, Unavailability of website."
+        },
+        { 
+            q: "Trong mô hình tấn công DDoS, 'Handler' đóng vai trò gì?", 
+            options: ["Là máy tính nạn nhân", "Là máy tính của kẻ tấn công", "Là hệ thống điều khiển trung gian mà kẻ tấn công dùng để ra lệnh cho các Zombie", "Là phần mềm diệt virus"], 
+            correct: 2, 
+            explanation: "Slide 4: Attacker sets a Handler system... Handler infects compromised PCs."
+        },
+        { 
+            q: "Nhóm đối tượng nào thực hiện tấn công DoS nhằm mục đích tống tiền (Commercial gain) hoặc phá hoại đối thủ cạnh tranh?", 
+            options: ["Script Kiddies", "Cyber Criminals (Tội phạm mạng)", "Hacktivists", "Chính phủ"], 
+            correct: 1, 
+            explanation: "Slide 6: Cyber criminals - motivated by commercial gain, to knock off the competition."
+        },
+        { 
+            q: "'Hacktivists' thực hiện tấn công DoS vì mục đích gì?", 
+            options: ["Vì tiền", "Để thể hiện quan điểm chính trị hoặc xã hội (criticism against governments/politicians)", "Để thử nghiệm công cụ", "Vô tình"], 
+            correct: 1, 
+            explanation: "Slide 6: Hacktivists - uses DoS... as a means of criticism against governments, politicians..."
+        },
+
+        // --- PHẦN 2: CÁC KỸ THUẬT TẤN CÔNG DOS (Slide 7-18) ---
+        { 
+            q: "SYN Flood Attack lợi dụng lỗ hổng trong quy trình nào của giao thức TCP?", 
+            options: ["Quy trình đóng kết nối (FIN)", "Quy trình bắt tay 3 bước (Three-way handshake)", "Quy trình truyền dữ liệu", "Quy trình kiểm tra lỗi"], 
+            correct: 1, 
+            explanation: "Slide 10: SYN Attack - Attacker sends a flood of SYN requests... never sends the final ACK (Handshake process)."
+        },
+        { 
+            q: "Trong SYN Flood, máy chủ đích bị rơi vào trạng thái gì khiến tài nguyên bị cạn kiệt?", 
+            options: ["Trạng thái đóng (Closed)", "Trạng thái chờ kết nối (Half-open connection)", "Trạng thái lắng nghe (Listening)", "Trạng thái ngủ (Sleep)"], 
+            correct: 1, 
+            explanation: "Slide 10: The target system waits for the ACK... creating 'half-open' connections that consume resources."
+        },
+        { 
+            q: "ICMP Flood Attack hoạt động như thế nào?", 
+            options: ["Gửi gói tin TCP", "Gửi một lượng lớn gói tin ICMP Echo Request (Ping) để làm quá tải băng thông hoặc khả năng xử lý của nạn nhân", "Gửi email rác", "Gửi mã độc"], 
+            correct: 1, 
+            explanation: "Slide 12: ICMP Flood - flooding the network with ICMP Echo Request packets."
+        },
+        { 
+            q: "Smurf Attack là một biến thể của tấn công nào?", 
+            options: ["SYN Flood", "ICMP Flood (nhưng sử dụng địa chỉ IP giả mạo và gửi broadcast)", "HTTP Flood", "UDP Flood"], 
+            correct: 1, 
+            explanation: "Slide 36: Smurf Attack involves sending ICMP Echo Requests to the broadcast address... with a spoofed source IP."
+        },
+        { 
+            q: "Trong Smurf Attack, kẻ tấn công giả mạo địa chỉ IP nguồn thành địa chỉ của ai?", 
+            options: ["Của chính hắn", "Của nạn nhân (Victim)", "Của Router", "Của máy chủ DNS"], 
+            correct: 1, 
+            explanation: "Slide 36: The source address of the packet is spoofed to the victim's IP address."
+        },
+        { 
+            q: "Peer-to-Peer Attack lợi dụng điều gì để tấn công?", 
+            options: ["Lỗi phần mềm DC++", "Hệ thống chia sẻ tập tin ngang hàng (P2P) để điều hướng lượng lớn người dùng kết nối đến nạn nhân", "Máy chủ web", "Email"], 
+            correct: 1, 
+            explanation: "Slide 13: Using peer-to-peer file sharing hubs... allow clients to disconnect and connect to a victim website."
+        },
+        { 
+            q: "Permanent DoS (PDoS) hay còn gọi là 'Phlashing' gây ra hậu quả gì?", 
+            options: ["Làm chậm mạng tạm thời", "Phá hủy phần cứng (thường là firmware) khiến thiết bị không thể sử dụng được nữa (Bricking)", "Xóa file dữ liệu", "Ăn cắp mật khẩu"], 
+            correct: 1, 
+            explanation: "Slide 14: Permanent DoS (Phlashing)... damages a system hardware to the extent that it requires replacement."
+        },
+        { 
+            q: "Application Level Flood (Tấn công tầng ứng dụng) nhắm vào đâu?", 
+            options: ["Băng thông mạng", "Tài nguyên máy chủ (CPU, RAM) bằng cách giả lập lưu lượng ứng dụng hợp lệ (ví dụ: HTTP GET/POST)", "Card mạng", "Dây cáp"], 
+            correct: 1, 
+            explanation: "Slide 15: Attackers exploit programming errors... or exhaust server resources (app level)."
+        },
+        { 
+            q: "Land Attack hoạt động bằng cách nào?", 
+            options: ["Gửi gói tin có kích thước lớn", "Gửi gói tin TCP SYN với địa chỉ IP nguồn và IP đích GIỐNG NHAU (đều là IP của nạn nhân)", "Gửi gói tin UDP", "Gửi gói tin phân mảnh lỗi"], 
+            correct: 1, 
+            explanation: "Slide 39: Land Attack - sends a TCP SYN packet... with the source address matches the destination address."
+        },
+        { 
+            q: "Teardrop Attack lợi dụng lỗ hổng gì?", 
+            options: ["Lỗi tràn bộ đệm", "Lỗi xử lý việc ghép nối các gói tin bị phân mảnh (Fragmentation/Reassembly) có offset chồng chéo nhau", "Lỗi bắt tay 3 bước", "Lỗi DNS"], 
+            correct: 1, 
+            explanation: "Slide 38: Teardrop Attack... involves sending mangled IP fragments with overlapping, over-sized payloads."
+        },
+        { 
+            q: "Ping of Death là tấn công gửi gói tin có đặc điểm gì?", 
+            options: ["Gói tin Ping có kích thước lớn hơn giới hạn cho phép (65,535 bytes)", "Gói tin Ping rỗng", "Gói tin Ping liên tục", "Gói tin Ping mã hóa"], 
+            correct: 0, 
+            explanation: "Slide 31: Ping of Death... sending an IP packet larger than the 65,535 bytes allowed by the IP protocol."
+        },
+
+        // --- PHẦN 3: BOTNET (Slide 19-24) ---
+        { 
+            q: "Botnet là gì?", 
+            options: ["Một phần mềm diệt virus", "Mạng lưới các máy tính bị nhiễm mã độc (Zombies) được điều khiển từ xa bởi Bot Herder", "Một loại tường lửa", "Một công cụ lập trình"], 
+            correct: 1, 
+            explanation: "Slide 19: Botnet is a network of compromised computers (Zombies) controlled by a bot herder."
+        },
+        { 
+            q: "Máy tính bị nhiễm mã độc trong Botnet được gọi là gì?", 
+            options: ["Master", "Zombie (hoặc Agent/Bot)", "Server", "Client"], 
+            correct: 1, 
+            explanation: "Slide 4: Compromised PCs (Zombies)."
+        },
+        { 
+            q: "Kẻ tấn công sử dụng Botnet để làm gì?", 
+            options: ["Tấn công DDoS", "Gửi thư rác (Spam)", "Ăn cắp thông tin", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 20: Use of Botnets: DDoS attacks, Spamming, Sniffing traffic, Keylogging..."
+        },
+        { 
+            q: "Trojan nào sau đây được liệt kê là công cụ tạo Botnet?", 
+            options: ["Poison Ivy / Shark / PlugBot", "Notepad", "Calculator", "WinZip"], 
+            correct: 0, 
+            explanation: "Slide 22, 23, 24: Shark, Poison Ivy, PlugBot are Botnet Trojans."
+        },
+
+        // --- PHẦN 4: DDOS & CÔNG CỤ (Slide 25-43) ---
+        { 
+            q: "Volumetric Attack (Tấn công dựa trên lưu lượng) được đo bằng đơn vị gì?", 
+            options: ["Bits per second (bps)", "Requests per second (RPS)", "Connections per second", "Files per second"], 
+            correct: 0, 
+            explanation: "Slide 26: Volumetric Attacks... measured in bits per second (bps)."
+        },
+        { 
+            q: "Protocol Attack (Tấn công giao thức) nhằm mục đích gì?", 
+            options: ["Làm đầy băng thông", "Làm cạn kiệt tài nguyên của thiết bị mạng (tường lửa, load balancer) như bảng trạng thái kết nối", "Tấn công ứng dụng web", "Xóa dữ liệu"], 
+            correct: 1, 
+            explanation: "Slide 28: Protocol Attacks... consume actual server resources... measured in packets per second."
+        },
+        { 
+            q: "Application Layer Attack (Tấn công tầng ứng dụng) thường khó phát hiện vì sao?", 
+            options: ["Vì nó sử dụng ít băng thông", "Vì lưu lượng trông giống như lưu lượng truy cập hợp lệ (legitimate requests)", "Vì nó không dùng mạng", "Vì nó mã hóa"], 
+            correct: 1, 
+            explanation: "Slide 29: Application Layer Attacks... mimic legitimate user behavior."
+        },
+        { 
+            q: "LOIC (Low Orbit Ion Cannon) là công cụ dùng để làm gì?", 
+            options: ["Quét virus", "Thực hiện tấn công DDoS (Network stress testing tool)", "Bẻ khóa mật khẩu", "Vẽ sơ đồ mạng"], 
+            correct: 1, 
+            explanation: "Slide 41: LOIC is a network stress testing application... used for DDoS."
+        },
+        { 
+            q: "HOIC (High Orbit Ion Cannon) khác LOIC ở điểm nào?", 
+            options: ["Yếu hơn LOIC", "Mạnh hơn, hỗ trợ tấn công qua HTTP với các script tùy chỉnh (booster scripts) để tránh bị phát hiện", "Chỉ chạy trên Linux", "Không dùng để DDoS"], 
+            correct: 1, 
+            explanation: "Slide 42: HOIC... capability to attack up to 256 URLs simultaneously... uses booster scripts."
+        },
+        { 
+            q: "UDP Flood Attack tấn công vào đâu?", 
+            options: ["Các cổng ngẫu nhiên trên máy đích", "Cổng 80", "Cổng 21", "Cổng 25"], 
+            correct: 0, 
+            explanation: "Slide 33: UDP Flood - Attacker sends UDP packets to random ports on the target."
+        },
+        { 
+            q: "Fragmentation Attack (Tấn công phân mảnh) làm gì?", 
+            options: ["Gửi các mảnh gói tin không thể ghép lại được để làm treo hệ thống", "Gửi gói tin hoàn chỉnh", "Gửi gói tin nhỏ", "Gửi gói tin lớn"], 
+            correct: 0, 
+            explanation: "Slide 37: Fragmentation Attack... reassembling these packets can crash the system (tương tự Teardrop)."
+        },
+
+        // --- PHẦN 5: PHÒNG CHỐNG & PHÁT HIỆN (Slide 44-54) ---
+        { 
+            q: "Kỹ thuật phát hiện DoS dựa trên 'Activity Profiling' hoạt động như thế nào?", 
+            options: ["So sánh lưu lượng hiện tại với mức lưu lượng trung bình (baseline) đã được thiết lập trước đó", "Tìm kiếm chữ ký virus", "Đếm số lượng gói tin", "Kiểm tra IP"], 
+            correct: 0, 
+            explanation: "Slide 44: Activity Profiling... based on the average packet rate for a network flow."
+        },
+        { 
+            q: "Kỹ thuật 'Sequential Change-Point Detection' dùng để làm gì?", 
+            options: ["Phát hiện sự thay đổi đột ngột trong thống kê lưu lượng để nhận diện tấn công", "Thay đổi IP", "Thay đổi DNS", "Thay đổi mật khẩu"], 
+            correct: 0, 
+            explanation: "Slide 44: Sequential Change-Point Detection... filter traffic data... identifies anomalous changes."
+        },
+        { 
+            q: "Wavelet-based Signal Analysis là kỹ thuật phân tích gì?", 
+            options: ["Phân tích tín hiệu quang phổ", "Phân tích tín hiệu mạng để phát hiện sự bất thường về năng lượng (spectral analysis)", "Phân tích âm thanh", "Phân tích hình ảnh"], 
+            correct: 1, 
+            explanation: "Slide 44: Wavelet-based Signal Analysis... spectral analysis of network traffic."
+        },
+        { 
+            q: "Chiến lược phòng thủ 'Absorbing the attack' (Hấp thụ tấn công) nghĩa là gì?", 
+            options: ["Tắt máy chủ", "Sử dụng thêm tài nguyên (băng thông, máy chủ dự phòng) để chịu đựng tải tấn công", "Chặn IP tấn công", "Chuyển hướng tấn công"], 
+            correct: 1, 
+            explanation: "Slide 45: Absorbing the attack - use additional capacity to absorb the attack."
+        },
+        { 
+            q: "Chiến lược 'Degrading services' (Giảm cấp dịch vụ) là gì?", 
+            options: ["Tắt các dịch vụ không quan trọng để dành tài nguyên cho các dịch vụ quan trọng (critical services)", "Tắt hết dịch vụ", "Chạy dịch vụ chậm lại", "Cài lại dịch vụ"], 
+            correct: 0, 
+            explanation: "Slide 45: Degrading services - Stop non-critical services."
+        },
+        { 
+            q: "Ingress Filtering (Lọc đầu vào) giúp ngăn chặn điều gì?", 
+            options: ["Ngăn chặn gói tin có địa chỉ nguồn giả mạo đi VÀO mạng", "Ngăn chặn gói tin đi RA mạng", "Ngăn chặn virus", "Ngăn chặn spam"], 
+            correct: 0, 
+            explanation: "Slide 48: Ingress filtering... prevents the source address spoofed packets from entering."
+        },
+        { 
+            q: "Egress Filtering (Lọc đầu ra) giúp ngăn chặn điều gì?", 
+            options: ["Ngăn chặn gói tin có địa chỉ nguồn giả mạo (không thuộc mạng nội bộ) đi RA KHỎI mạng (chặn máy trong mạng làm Botnet)", "Chặn gói tin đi vào", "Chặn email đến", "Chặn web"], 
+            correct: 0, 
+            explanation: "Slide 48: Egress filtering... scans the packet headers of IP packets leaving a network."
+        },
+        { 
+            q: "TCP Intercept trên Router Cisco giúp chống lại tấn công nào?", 
+            options: ["SYN Flood", "UDP Flood", "ICMP Flood", "HTTP Flood"], 
+            correct: 0, 
+            explanation: "Slide 49: TCP Intercept... prevents SYN flooding attacks (bằng cách xác thực bắt tay trước khi chuyển cho server)."
+        },
+        { 
+            q: "Honeypot được sử dụng trong phòng chống DoS để làm gì?", 
+            options: ["Làm hệ thống mồi nhử để thu hút và phân tích tấn công, bảo vệ hệ thống thật", "Làm mật ong", "Làm máy chủ chính", "Làm tường lửa"], 
+            correct: 0, 
+            explanation: "Slide 51: Use Honeypots... to attract and trap attackers."
+        },
+        { 
+            q: "Load Balancing (Cân bằng tải) giúp ích gì trong việc chống DDoS?", 
+            options: ["Phân phối lưu lượng truy cập ra nhiều máy chủ, giảm tải cho từng máy đơn lẻ", "Chặn tất cả lưu lượng", "Tăng tốc độ mạng", "Mã hóa dữ liệu"], 
+            correct: 0, 
+            explanation: "Slide 52: Load Balancing... distributes traffic across multiple servers."
+        },
+        { 
+            q: "Throttling (Điều tiết) là biện pháp gì?", 
+            options: ["Giới hạn băng thông hoặc số lượng kết nối tối đa cho phép từ một nguồn để ngăn quá tải", "Tắt mạng", "Mở rộng băng thông", "Xóa dữ liệu"], 
+            correct: 0, 
+            explanation: "Slide 52: Throttling... limits the rate of traffic."
+        },
+
+        // --- PHẦN 6: KIỂM THỬ (Slide 55-56) ---
+        { 
+            q: "Mục tiêu chính của DoS Penetration Testing là gì?", 
+            options: ["Làm sập hệ thống thật", "Kiểm tra xem hệ thống có khả năng chống chịu (resistant) với các cuộc tấn công DoS hay không", "Cài đặt Botnet", "Ăn cắp dữ liệu"], 
+            correct: 1, 
+            explanation: "Slide 55: The main objective... is to ensure that the system is resistant to DoS attacks."
+        },
+        { 
+            q: "Bước đầu tiên trong quy trình DoS Pen Testing là gì?", 
+            options: ["Define Objective (Xác định mục tiêu)", "Run SYN attack", "Flood website", "Document findings"], 
+            correct: 0, 
+            explanation: "Slide 56 (Sơ đồ): START -> Define Objective."
+        },
+        { 
+            q: "Công cụ nào có thể được dùng để kiểm tra khả năng chịu tải của Web Server (Load Capacity)?", 
+            options: ["Web Application Stress (WAS) / JMeter", "Notepad", "Paint", "Calculator"], 
+            correct: 0, 
+            explanation: "Slide 56: Test the web server using automated tools such as Web Application Stress (WAS) and Jmeter."
+        },
+        { 
+            q: "Trong Pen Testing, kỹ thuật nào dùng để kiểm tra khả năng chống chịu SYN Flood?", 
+            options: ["Run SYN attack on the server", "Run UDP attack", "Run ICMP attack", "Run HTTP attack"], 
+            correct: 0, 
+            explanation: "Slide 56: Run SYN attack on the server... using tools such as Trin00, TFN2K."
+        },
+        { 
+            q: "Công cụ nào được dùng để thực hiện 'Port Flooding Attack' trong kiểm thử?", 
+            options: ["Mutilate / Pepsis", "Word", "Excel", "PowerPoint"], 
+            correct: 0, 
+            explanation: "Slide 56: Use tools Mutilate and Pepsis to automate a port flooding attack."
+        },
+        { 
+            q: "Email Bomber là công cụ dùng để kiểm thử hệ thống nào?", 
+            options: ["Mail Server", "Web Server", "DNS Server", "FTP Server"], 
+            correct: 0, 
+            explanation: "Slide 56: Use tools Mail Bomber... to send a large number of emails to a target mail server."
+        },
+        { 
+            q: "Bước cuối cùng trong quy trình DoS Pen Testing là gì?", 
+            options: ["Document all the Findings (Ghi lại kết quả)", "Tắt máy", "Xóa hệ điều hành", "Cài lại mạng"], 
+            correct: 0, 
+            explanation: "Slide 56: Document all the Findings."
+        },
+        { 
+            q: "Multi-Vector Attack là gì?", 
+            options: ["Tấn công sử dụng kết hợp nhiều kỹ thuật khác nhau (Volumetric, Protocol, Application) cùng lúc", "Tấn công 1 lần", "Tấn công 1 người", "Tấn công bằng virus"], 
+            correct: 0, 
+            explanation: "Kiến thức mở rộng (thường gặp trong DDoS hiện đại): Multi-vector attack combinations."
+        },
+        { 
+            q: "C&C (Command and Control) Server trong Botnet dùng để làm gì?", 
+            options: ["Gửi lệnh điều khiển cho các Zombie", "Lưu trữ web", "Chơi game", "Xem phim"], 
+            correct: 0, 
+            explanation: "Slide 19: Bot herder uses C&C to control the botnet."
+        },
+        { 
+            q: "DoSHTTP là công cụ tấn công DoS loại nào?", 
+            options: ["HTTP Flood (Application Layer)", "UDP Flood", "SYN Flood", "ICMP Flood"], 
+            correct: 0, 
+            explanation: "Slide 43: DoSHTTP... HTTP Flood DoS tool."
+        },
+        { 
+            q: "Post-attack Forensics (Pháp y sau tấn công) giúp ích gì?", 
+            options: ["Phân tích mẫu lưu lượng (Traffic Pattern) để hiểu nguồn gốc và cách thức tấn công, từ đó cập nhật hệ thống phòng thủ", "Khôi phục dữ liệu bị xóa", "Bắt hacker ngay lập tức", "Sửa phần cứng"], 
+            correct: 0, 
+            explanation: "Slide 47: Post-attack forensics... analyze traffic patterns... update signatures."
+        },
+        { 
+            q: "RFC 3704 quy định về điều gì trong phòng chống DoS?", 
+            options: ["Ingress Filtering (Lọc ngược)", "Mã hóa mật khẩu", "Cấu hình Email", "Chuẩn wifi"], 
+            correct: 0, 
+            explanation: "Slide 48: RFC 3704 (Ingress Filtering for Multihomed Networks) - Kiến thức liên quan Ingress Filtering."
+        },
+        { 
+            q: "Khi bị tấn công DDoS, việc 'Shutting down services' có phải là giải pháp tốt nhất không?", 
+            options: ["Không, đó là giải pháp cuối cùng vì nó cũng gây ra DoS cho người dùng hợp lệ", "Có, an toàn tuyệt đối", "Có, nhanh nhất", "Không, vì tốn điện"], 
+            correct: 0, 
+            explanation: "Slide 45: Shutting down services... should be done only when all other options fail."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 45) msgEl.innerText = "Tuyệt vời! Bạn nắm rất vững kiến thức về DoS/DDoS.";
+        else if (score >= 35) msgEl.innerText = "Khá tốt! Hãy ôn lại các công cụ và kỹ thuật cụ thể.";
+        else msgEl.innerText = "Bạn cần đọc kỹ lại slide để nắm chắc kiến thức.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

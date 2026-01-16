@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 5 (Sniffing)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 5: Nghe lén (Sniffing)</h1>
+        <p class="subtitle">MAC, DHCP, ARP, DNS Attacks & Countermeasures</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/55</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/55
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 55 câu hỏi cho Chương 5 - Sniffing
+    const quizData = [
+        // --- PHẦN 1: KHÁI NIỆM CƠ BẢN (Slide 4-8) ---
+        { 
+            q: "Sniffing (Nghe lén) là gì?", 
+            options: ["Quá trình gửi thư rác", "Quá trình giám sát và bắt giữ (capturing) tất cả các gói dữ liệu đi qua một mạng nhất định", "Quá trình tấn công từ chối dịch vụ", "Quá trình mã hóa dữ liệu"], 
+            correct: 1, 
+            explanation: "Slide 4: Sniffing is a process of monitoring and capturing all data packets passing through a given network."
+        },
+        { 
+            q: "Để thực hiện Sniffing, card mạng (NIC) của kẻ tấn công phải được đặt ở chế độ nào?", 
+            options: ["User Mode", "Kernel Mode", "Promiscuous Mode", "Safe Mode"], 
+            correct: 2, 
+            explanation: "Slide 5: Sniffer turns the NIC of a system to the promiscuous mode so that it listens to all the data transmitted on its segment."
+        },
+        { 
+            q: "Giao thức nào sau đây dễ bị nghe lén (cleartext) nhất?", 
+            options: ["SSH", "HTTPS", "Telnet, FTP, HTTP", "IPSec"], 
+            correct: 2, 
+            explanation: "Slide 4: Telnet, FTP passwords, Web traffic (HTTP) là những thông tin nhạy cảm dễ bị bắt giữ vì truyền dưới dạng văn bản rõ."
+        },
+        { 
+            q: "Passive Sniffing (Nghe lén thụ động) thường xảy ra trên thiết bị mạng nào?", 
+            options: ["Switch", "Hub", "Router", "Firewall"], 
+            correct: 1, 
+            explanation: "Slide 6: Passive sniffing means sniffing through a hub (Hub gửi tín hiệu đến tất cả các cổng - Broadcast domain)."
+        },
+        { 
+            q: "Active Sniffing (Nghe lén chủ động) được sử dụng trên thiết bị mạng nào?", 
+            options: ["Hub", "Switch", "Repeater", "Modem"], 
+            correct: 1, 
+            explanation: "Slide 7: Active Sniffing is used to sniff a switch-based network."
+        },
+        { 
+            q: "Tại sao trên môi trường Switch, việc nghe lén khó khăn hơn trên Hub?", 
+            options: ["Switch mã hóa dữ liệu", "Switch chỉ chuyển tiếp gói tin đến cổng đích cụ thể dựa trên địa chỉ MAC (unicast), không broadcast ra tất cả các cổng", "Switch chặn promiscuous mode", "Switch không có địa chỉ MAC"], 
+            correct: 1, 
+            explanation: "Slide 7: A switch regulates the flow of data... sends packets only to the intended destination port."
+        },
+        { 
+            q: "Phương pháp nào KHÔNG phải là kỹ thuật Active Sniffing?", 
+            options: ["MAC Flooding", "ARP Spoofing", "DNS Spoofing", "Sniffing on a Hub"], 
+            correct: 3, 
+            explanation: "Slide 7 liệt kê Active Sniffing: MAC Flooding, DNS Spoofing, ARP Poisoning... Sniffing on a Hub là Passive."
+        },
+
+        // --- PHẦN 2: TẤN CÔNG MAC (Slide 16-24) ---
+        { 
+            q: "Bảng CAM (Content Addressable Memory) trên Switch dùng để lưu trữ thông tin gì?", 
+            options: ["Địa chỉ IP và cổng", "Địa chỉ MAC và cổng tương ứng (Port mapping)", "DNS cache", "Routing table"], 
+            correct: 1, 
+            explanation: "Slide 16: CAM table stores information such as MAC addresses available on physical ports."
+        },
+        { 
+            q: "Điều gì xảy ra khi bảng CAM của Switch bị đầy (CAM Table Full)?", 
+            options: ["Switch ngừng hoạt động", "Switch hoạt động như một Hub (Fail Open) và broadcast tất cả gói tin ra mọi cổng", "Switch chặn tất cả kết nối mới", "Switch tự khởi động lại"], 
+            correct: 1, 
+            explanation: "Slide 16: Once the CAM table is full... the switch acts as a hub by broadcasting packets to all ports."
+        },
+        { 
+            q: "Kỹ thuật tấn công làm tràn bảng CAM được gọi là gì?", 
+            options: ["ARP Spoofing", "MAC Flooding", "DHCP Starvation", "DNS Poisoning"], 
+            correct: 1, 
+            explanation: "Slide 17: MAC Flooding involves flooding the CAM table with fake MAC-Port mapping."
+        },
+        { 
+            q: "Công cụ nào sau đây thường dùng để thực hiện MAC Flooding?", 
+            options: ["macof (thuộc bộ dsniff)", "Wireshark", "Ping", "Traceroute"], 
+            correct: 0, 
+            explanation: "Slide 18, 20: Tool 'macof' sends random MAC addresses to switch."
+        },
+        { 
+            q: "Switch Port Stealing là kỹ thuật tấn công dựa trên việc gì?", 
+            options: ["Ăn cắp switch vật lý", "Gửi gói tin BPDU giả mạo", "Sử dụng kỹ thuật MAC Flooding để đánh lừa switch cập nhật lại bảng CAM, trỏ MAC đích về cổng của kẻ tấn công", "Cắt dây mạng"], 
+            correct: 2, 
+            explanation: "Slide 21: Switch Port Stealing uses MAC flooding to sniff packets... deceiving the switch."
+        },
+        { 
+            q: "Biện pháp phòng chống MAC Flooding hiệu quả nhất trên Switch là gì?", 
+            options: ["Tắt switch", "Sử dụng tính năng Port Security", "Dùng dây cáp quang", "Đặt mật khẩu mạnh"], 
+            correct: 1, 
+            explanation: "Slide 22: Port security allows restricting the ingress interface... specifying MAC addresses allowed."
+        },
+
+        // --- PHẦN 3: TẤN CÔNG DHCP (Slide 25-30) ---
+        { 
+            q: "Quy trình cấp phát IP của DHCP diễn ra theo thứ tự nào?", 
+            options: ["Request -> Offer -> Discover -> Acknowledge", "Discover -> Offer -> Request -> Acknowledge (DORA)", "Offer -> Discover -> Request -> Acknowledge", "Discover -> Request -> Offer -> Acknowledge"], 
+            correct: 1, 
+            explanation: "Slide 25: DHCP Discovery -> DHCP Offer -> DHCP Request -> DHCP Acknowledge."
+        },
+        { 
+            q: "DHCP Starvation Attack (Tấn công cạn kiệt DHCP) nhằm mục đích gì?", 
+            options: ["Làm cạn kiệt nguồn địa chỉ IP trong Scope của DHCP Server để người dùng hợp lệ không thể nhận IP", "Ăn cắp mật khẩu Admin", "Tấn công Web Server", "Làm hỏng router"], 
+            correct: 0, 
+            explanation: "Slide 26: Attacker broadcasts DHCP requests... exhausts the address space... legitimate users cannot obtain IP."
+        },
+        { 
+            q: "Công cụ nào được sử dụng để thực hiện DHCP Starvation?", 
+            options: ["Yersinia / Gobbler", "Notepad", "Calculator", "Paint"], 
+            correct: 0, 
+            explanation: "Slide 26: Tools used: Yersinia, Gobbler."
+        },
+        { 
+            q: "Rogue DHCP Server Attack là gì?", 
+            options: ["Tấn công vào server DHCP thật", "Dựng một DHCP Server giả mạo để cấp IP, Gateway và DNS giả cho nạn nhân", "Xóa database của DHCP", "Chặn cổng DHCP"], 
+            correct: 1, 
+            explanation: "Slide 27: Attacker sets up a Rogue DHCP Server... offers IP addresses... directs traffic to attacker's machine."
+        },
+        { 
+            q: "Biện pháp phòng chống DHCP Starvation và Rogue DHCP Server là gì?", 
+            options: ["DHCP Snooping", "Tắt DHCP", "Dùng IP tĩnh cho toàn bộ mạng", "Cấm dùng Internet"], 
+            correct: 0, 
+            explanation: "Slide 30: Enable DHCP Snooping... allows switch to deny traffic from rogue DHCP servers."
+        },
+
+        // --- PHẦN 4: TẤN CÔNG ARP (Slide 31-45) ---
+        { 
+            q: "Giao thức ARP (Address Resolution Protocol) dùng để làm gì?", 
+            options: ["Phân giải tên miền sang IP", "Phân giải địa chỉ IP sang địa chỉ MAC", "Định tuyến gói tin", "Mã hóa dữ liệu"], 
+            correct: 1, 
+            explanation: "Slide 32: ARP allows a computer to determine the MAC address of a computer with a specific IP."
+        },
+        { 
+            q: "ARP là giao thức 'Stateless' nghĩa là gì?", 
+            options: ["Nó không lưu trạng thái kết nối", "Máy tính tự động chấp nhận gói ARP Reply ngay cả khi không gửi ARP Request trước đó", "Nó bảo mật cao", "Nó chỉ hoạt động ở Mỹ"], 
+            correct: 1, 
+            explanation: "Slide 33: ARP is stateless... computer accepts any ARP reply packet even if it did not send a request."
+        },
+        { 
+            q: "ARP Spoofing (hay ARP Poisoning) dẫn đến hậu quả gì?", 
+            options: ["Tấn công Man-in-the-Middle (MITM)", "Làm hỏng card mạng", "Xóa bảng định tuyến", "Tăng tốc độ mạng"], 
+            correct: 0, 
+            explanation: "Slide 34: ARP Spoofing involves constructing a large number of forged ARP request/reply... leads to MITM attack."
+        },
+        { 
+            q: "Trong ARP Spoofing, kẻ tấn công liên kết địa chỉ MAC của hắn với cái gì?", 
+            options: ["Địa chỉ IP của chính hắn", "Địa chỉ IP của máy nạn nhân hoặc Gateway (Router)", "Địa chỉ DNS", "Địa chỉ Email"], 
+            correct: 1, 
+            explanation: "Slide 34: Attacker links his MAC address with the IP address of a legitimate user (or Gateway)."
+        },
+        { 
+            q: "Công cụ nào nổi tiếng dùng để thực hiện ARP Poisoning và Sniffing?", 
+            options: ["Cain & Abel / Ettercap", "WinZip", "Adobe Reader", "VLC"], 
+            correct: 0, 
+            explanation: "Slide 36: Tools mentioned are Cain & Abel, WinArpAttacker, Ettercap..."
+        },
+        { 
+            q: "Để phòng chống ARP Spoofing, quản trị viên có thể sử dụng biện pháp nào?", 
+            options: ["Sử dụng Static ARP entries (Gán cứng MAC-IP)", "Dynamic ARP Inspection (DAI) trên Switch", "Cả A và B đều đúng", "Chỉ cần cài antivirus"], 
+            correct: 2, 
+            explanation: "Slide 42, 43: Implement Static ARP entries... Dynamic ARP Inspection."
+        },
+
+        // --- PHẦN 5: MAC SPOOFING & DNS (Slide 46-59) ---
+        { 
+            q: "MAC Spoofing (Giả mạo MAC) được sử dụng để làm gì?", 
+            options: ["Làm cho switch chạy nhanh hơn", "Vượt qua các bộ lọc kiểm soát truy cập (Access Control Lists) hoặc che giấu danh tính", "Tăng cường bảo mật", "Thay đổi phần cứng card mạng"], 
+            correct: 1, 
+            explanation: "Slide 46: Attackers spoof MAC addresses to bypass access control lists... or hide identity."
+        },
+        { 
+            q: "Công cụ nào dùng để đổi địa chỉ MAC (MAC Spoofing)?", 
+            options: ["SMAC", "Ping", "Telnet", "FTP"], 
+            correct: 0, 
+            explanation: "Slide 47: Tools: SMAC (Spoof MAC Address)."
+        },
+        { 
+            q: "DNS Spoofing (Giả mạo DNS) hoạt động như thế nào?", 
+            options: ["Đánh sập máy chủ DNS", "Lừa máy nạn nhân phân giải tên miền (ví dụ: www.bank.com) thành địa chỉ IP của kẻ tấn công", "Xóa tên miền", "Đổi tên miền"], 
+            correct: 1, 
+            explanation: "Slide 51: DNS Spoofing... directs the victim to the attacker's malicious website instead of the legitimate one."
+        },
+        { 
+            q: "DNS Cache Poisoning là gì?", 
+            options: ["Xóa cache DNS", "Chèn các bản ghi DNS giả mạo vào bộ nhớ đệm (cache) của DNS Server", "Tắt DNS Server", "Làm đầy ổ cứng DNS Server"], 
+            correct: 1, 
+            explanation: "Slide 51: Altering or adding forged DNS records into the DNS resolver cache."
+        },
+        { 
+            q: "Biện pháp nào giúp phòng chống DNS Spoofing?", 
+            options: ["Sử dụng DNSSEC", "Sử dụng IPSec", "Dùng SSL/HTTPS", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 59: Use DNSSEC, IPSec, SSL... to secure DNS traffic."
+        },
+
+        // --- PHẦN 6: CÔNG CỤ & KHÁC (Slide 61-73) ---
+        { 
+            q: "Wireshark là công cụ gì?", 
+            options: ["Công cụ quét virus", "Công cụ phân tích giao thức mạng (Network Protocol Analyzer) và bắt gói tin", "Công cụ bẻ khóa mật khẩu", "Công cụ vẽ sơ đồ mạng"], 
+            correct: 1, 
+            explanation: "Slide 61: Wireshark is a network protocol analyzer... captures and browses traffic."
+        },
+        { 
+            q: "Trong Wireshark, bộ lọc `ip.addr == 192.168.1.1` dùng để làm gì?", 
+            options: ["Chỉ hiển thị các gói tin có IP nguồn hoặc đích là 192.168.1.1", "Chặn IP 192.168.1.1", "Ping IP 192.168.1.1", "Đổi IP thành 192.168.1.1"], 
+            correct: 0, 
+            explanation: "Kiến thức cơ bản về Wireshark Display Filters (thường được dạy kèm)."
+        },
+        { 
+            q: "Tcpdump là công cụ Sniffing hoạt động trên môi trường nào?", 
+            options: ["Chỉ Windows", "Dòng lệnh (Command line) trên Linux/Unix", "Giao diện đồ họa trên Android", "Chỉ MacOS"], 
+            correct: 1, 
+            explanation: "Slide 63: Tcpdump is a common packet analyzer that runs under the command line."
+        },
+        { 
+            q: "Lawful Interception (Đánh chặn hợp pháp) là gì?", 
+            options: ["Hacker nghe lén hợp pháp", "Quyền truy cập hợp pháp vào dữ liệu truyền thông (điện thoại, email) bởi các cơ quan thực thi pháp luật (như CALEA)", "Tự nghe lén chính mình", "Không tồn tại"], 
+            correct: 1, 
+            explanation: "Slide 14: Lawful Interception... legally sanctioned access to communications network data (CALEA)."
+        },
+        { 
+            q: "Để bảo vệ mạng khỏi Sniffing, giải pháp nào là hiệu quả nhất để bảo vệ dữ liệu truyền đi?", 
+            options: ["Sử dụng Hub thay vì Switch", "Sử dụng mã hóa (Encryption) như SSH, SSL/HTTPS, VPN", "Chỉ dùng mạng dây", "Đặt mật khẩu Wifi dài"], 
+            correct: 1, 
+            explanation: "Slide 67: Use encryption (SSH, SSL, VPN) to protect data from sniffing."
+        },
+        { 
+            q: "SSID Broadcasting nên được cấu hình như thế nào để hạn chế Sniffing trên mạng Wifi?", 
+            options: ["Bật (Enable)", "Tắt (Disable/Hide)", "Không quan trọng", "Đổi tên liên tục"], 
+            correct: 1, 
+            explanation: "Slide 68: Disable SSID broadcasting (dù không ngăn chặn hoàn toàn nhưng là một biện pháp)."
+        },
+
+        // --- PHẦN 7: QUY TRÌNH PEN TESTING (Slide 71-73) ---
+        { 
+            q: "Bước đầu tiên trong quy trình 'Sniffing Pen Testing' thường là gì?", 
+            options: ["Thực hiện DNS Spoofing", "Thực hiện MAC Flooding Attack", "Cài đặt virus", "Xóa log"], 
+            correct: 1, 
+            explanation: "Slide 71 (Sơ đồ): Bắt đầu bằng 'Perform MAC flooding attack'."
+        },
+        { 
+            q: "Sau khi thực hiện MAC Flooding, bước tiếp theo trong Pen Testing thường là gì?", 
+            options: ["Perform DHCP Starvation Attack", "Tắt máy", "Vẽ biểu đồ", "Gửi email"], 
+            correct: 0, 
+            explanation: "Slide 71 (Sơ đồ): Sau MAC Flooding -> Perform DHCP Starvation Attack."
+        },
+        { 
+            q: "Để thực hiện 'DHCP Starvation Attack' trong Pen Testing, công cụ nào được khuyến nghị?", 
+            options: ["Yersinia / Dhcpstarv", "Notepad", "Excel", "Paint"], 
+            correct: 0, 
+            explanation: "Slide 71: Use tools such as Dhcpstarv and Yersinia."
+        },
+        { 
+            q: "Trong quy trình Pen Testing, sau khi thực hiện DHCP Starvation, bước tiếp theo là gì?", 
+            options: ["Perform Rogue Server Attack", "Perform ARP Poisoning", "Perform MAC Spoofing", "Perform DNS Spoofing"], 
+            correct: 0, 
+            explanation: "Slide 71 (Sơ đồ): DHCP Starvation -> Perform Rogue Server Attack."
+        },
+        { 
+            q: "Kỹ thuật nào được thực hiện bằng các công cụ như Cain & Abel, WinArpAttacker?", 
+            options: ["ARP Poisoning", "MAC Flooding", "DHCP Starvation", "DNS Spoofing"], 
+            correct: 0, 
+            explanation: "Slide 71: Perform ARP poisoning using tools such as Cain & Abel..."
+        },
+        { 
+            q: "Để thực hiện 'MAC Spoofing' trong Pen Testing, công cụ nào được đề xuất?", 
+            options: ["SMAC", "Nmap", "Nessus", "Metasploit"], 
+            correct: 0, 
+            explanation: "Slide 71: Perform MAC Spoofing using tools such as SMAC."
+        },
+        { 
+            q: "IRDP Spoofing là kỹ thuật gì trong Pen Testing?", 
+            options: ["Gửi thông báo giả mạo về Router (Router Advertisement)", "Giả mạo IP", "Giả mạo DNS", "Giả mạo Email"], 
+            correct: 0, 
+            explanation: "Slide 72: Perform IRDP Spoofing by sending spoofed IRDP router advertisement messages."
+        },
+        { 
+            q: "DNS Spoofing trong Pen Testing có thể được thực hiện bằng công cụ/kỹ thuật nào?", 
+            options: ["arpspoof / dnsspoof", "Ping", "Tracert", "Ipconfig"], 
+            correct: 0, 
+            explanation: "Slide 72: Use techniques such as arpspoof/dnsspoof."
+        },
+        { 
+            q: "Cache Poisoning trong Pen Testing nhằm mục đích gì?", 
+            options: ["Gửi Trojan thay đổi cài đặt Proxy của nạn nhân", "Xóa cache", "Làm đầy cache", "Tăng tốc độ duyệt web"], 
+            correct: 0, 
+            explanation: "Slide 72: Perform cache poisoning by sending Trojan... changes proxy server settings."
+        },
+        { 
+            q: "Bước cuối cùng của quy trình Sniffing Pen Testing là gì?", 
+            options: ["Document all the Findings (Ghi lại kết quả)", "Tấn công DoS", "Xóa hệ điều hành", "Cài lại Switch"], 
+            correct: 0, 
+            explanation: "Slide 72: Document all the Findings."
+        },
+        { 
+            q: "ARP Poisoning thường được dùng làm tiền đề cho tấn công nào?", 
+            options: ["Man-in-the-Middle (MITM)", "Brute Force", "SQL Injection", "XSS"], 
+            correct: 0, 
+            explanation: "Slide 34: ARP Spoofing leads to MITM attack."
+        },
+        { 
+            q: "Gratuitous ARP là gì?", 
+            options: ["Gói tin ARP Reply đặc biệt được gửi mà không có yêu cầu, dùng để cập nhật cache ARP của các máy khác", "Gói tin ARP bị lỗi", "Gói tin ARP tính phí", "Gói tin ARP mã hóa"], 
+            correct: 0, 
+            explanation: "Kiến thức bổ sung về cơ chế ARP Poisoning (thường dùng Gratuitous ARP để đầu độc cache)."
+        },
+        { 
+            q: "Khi một kẻ tấn công thực hiện 'Rogue DHCP Server', hắn thường cung cấp thông tin gì sai lệch cho nạn nhân?", 
+            options: ["Default Gateway giả mạo", "Địa chỉ IP trùng lặp", "Subnet mask sai", "Tên máy tính sai"], 
+            correct: 0, 
+            explanation: "Slide 27: Attacker directs traffic to attacker's machine (thường bằng cách đổi Default Gateway)."
+        },
+        { 
+            q: "Kỹ thuật nào cho phép kẻ tấn công chặn bắt traffic trên Switch mà không cần ARP Poisoning?", 
+            options: ["MAC Flooding (biến Switch thành Hub)", "Ping Sweep", "Port Scanning", "OS Fingerprinting"], 
+            correct: 0, 
+            explanation: "Slide 16: Once CAM table is full, switch acts as a hub."
+        },
+        { 
+            q: "IPv6 có sử dụng giao thức ARP không?", 
+            options: ["Không, IPv6 sử dụng NDP (Neighbor Discovery Protocol) và ICMPv6", "Có, ARPv6", "Có, nhưng ít hơn", "IPv6 không cần phân giải địa chỉ"], 
+            correct: 0, 
+            explanation: "Kiến thức mở rộng về Sniffing (ARP chỉ dành cho IPv4)."
+        },
+        { 
+            q: "Sử dụng SFTP thay vì FTP giúp ngăn chặn điều gì?", 
+            options: ["Sniffing password và dữ liệu (vì SFTP có mã hóa)", "Virus", "Spam", "Phishing"], 
+            correct: 0, 
+            explanation: "Slide 67: Use secure protocols (SFTP uses SSH)."
+        },
+        { 
+            q: "IP-MAC pairing (Binding) trên Switch giúp chống lại tấn công nào?", 
+            options: ["ARP Spoofing / IP Spoofing", "MAC Flooding", "DHCP Starvation", "DNS Spoofing"], 
+            correct: 0, 
+            explanation: "Slide 42: Static ARP/IP-MAC binding prevents spoofing."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 45) msgEl.innerText = "Tuyệt vời! Bạn nắm rất vững kiến thức về Sniffing.";
+        else if (score >= 35) msgEl.innerText = "Khá tốt! Hãy ôn lại các kỹ thuật ARP và DHCP.";
+        else msgEl.innerText = "Bạn cần đọc kỹ lại slide để nắm chắc kiến thức.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

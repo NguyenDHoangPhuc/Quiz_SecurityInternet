@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 8 (Session Hijacking)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 8: Chiếm phiên làm việc (Session Hijacking)</h1>
+        <p class="subtitle">Application Level, Network Level, Tools & Prevention</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/55</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/55
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 55 câu hỏi cho Chương 8 - Session Hijacking
+    const quizData = [
+        // --- PHẦN 1: KHÁI NIỆM & CƠ BẢN (Slide 3-6, 10, 13) ---
+        { 
+            q: "Session Hijacking (Chiếm phiên làm việc) là gì?", 
+            options: ["Khai thác phiên làm việc máy tính hợp lệ để chiếm quyền điều khiển phiên giữa hai máy tính", "Ăn cắp mật khẩu đăng nhập", "Tấn công từ chối dịch vụ", "Mã hóa dữ liệu người dùng"], 
+            correct: 0, 
+            explanation: "Slide 3: Session Hijacking refers to the exploitation of a valid computer session where an attacker takes over a session between two computers."
+        },
+        { 
+            q: "Tại sao hầu hết các biện pháp xác thực chỉ diễn ra ở đầu phiên làm việc TCP lại tạo cơ hội cho Session Hijacking?", 
+            options: ["Vì nó giúp hacker dễ đoán mật khẩu", "Vì sau khi xác thực xong, hacker có thể chiếm quyền truy cập mà không cần xác thực lại", "Vì nó làm chậm hệ thống", "Vì nó sử dụng UDP"], 
+            correct: 1, 
+            explanation: "Slide 3: Since most authentication only occurs at the start of a TCP session, this allows the attacker to gain access."
+        },
+        { 
+            q: "Sự khác biệt chính giữa Spoofing (Giả mạo) và Hijacking (Chiếm quyền) là gì?", 
+            options: ["Spoofing chiếm phiên đang hoạt động, Hijacking tạo phiên mới", "Spoofing tạo phiên mới bằng thông tin giả mạo, Hijacking chiếm quyền một phiên đang hoạt động (active session)", "Spoofing dùng cho web, Hijacking dùng cho mạng", "Hai khái niệm này giống nhau"], 
+            correct: 1, 
+            explanation: "Slide 10: Spoofing: Attacker initiates a new session... Hijacking: Attacker takes over an existing active session."
+        },
+        { 
+            q: "Trong kiểu tấn công 'Active Session Hijacking', kẻ tấn công làm gì?", 
+            options: ["Chỉ nghe lén và ghi lại dữ liệu", "Tìm một phiên đang hoạt động và chiếm quyền điều khiển (takes over)", "Gửi thư rác", "Tắt máy nạn nhân"], 
+            correct: 1, 
+            explanation: "Slide 13: In an active attack, an attacker finds an active session and takes over."
+        },
+        { 
+            q: "Trong kiểu tấn công 'Passive Session Hijacking', kẻ tấn công làm gì?", 
+            options: ["Chiếm quyền điều khiển", "Ngồi im, theo dõi và ghi lại (sniff) tất cả lưu lượng truyền qua", "Thay đổi dữ liệu", "Ngắt kết nối"], 
+            correct: 1, 
+            explanation: "Slide 13: With passive attack, an attacker hijacks a session, but sits back, and watches and records all the traffic."
+        },
+        { 
+            q: "Yếu tố nào KHÔNG phải là lý do khiến Session Hijacking thành công?", 
+            options: ["Session ID nhỏ/yếu", "Không có thời gian hết hạn phiên (Indefinite Session Expiration Time)", "Sử dụng giao thức mã hóa mạnh (Strong Encryption)", "Truyền văn bản rõ (Clear Text Transmission)"], 
+            correct: 2, 
+            explanation: "Slide 5: Các nguyên nhân thành công gồm Weak Session ID, Indefinite Session Expiration, Clear Text Transmission... Sử dụng mã hóa là biện pháp phòng chống."
+        },
+
+        // --- PHẦN 2: CÁC KỸ THUẬT TẤN CÔNG CƠ BẢN (Slide 6-9) ---
+        { 
+            q: "Ba phương pháp chính để lấy được Session ID là gì?", 
+            options: ["Brute Forcing, Stealing, Calculating", "Guessing, Phishing, Spamming", "Sniffing, Spoofing, Flooding", "Scanning, Enumeration, Accessing"], 
+            correct: 0, 
+            explanation: "Slide 6: Brute Forcing, Stealing, Calculating."
+        },
+        { 
+            q: "Kỹ thuật 'HTTP Referrer Attack' hoạt động như thế nào?", 
+            options: ["Gửi email giả mạo", "Lừa người dùng click vào link đến trang web của hacker, trình duyệt sẽ gửi URL của trang trước đó (chứa Session ID) trong HTTP Referrer header", "Tấn công DNS", "Đoán Session ID"], 
+            correct: 1, 
+            explanation: "Slide 9: Browser sends the referrer URL containing the session ID to the attacker's site."
+        },
+        { 
+            q: "Để thực hiện tấn công Brute Force Session ID thành công, điều kiện cần là gì?", 
+            options: ["Phạm vi giá trị của Session ID phải giới hạn (limited range)", "Session ID phải rất dài", "Server phải tắt", "Người dùng phải đăng xuất"], 
+            correct: 0, 
+            explanation: "Slide 8: Possible range of values for the session ID must be limited to perform a successful bruteforce attack."
+        },
+
+        // --- PHẦN 3: SESSION HIJACKING TẦNG ỨNG DỤNG (Slide 14-29) ---
+        { 
+            q: "Session Hijacking tầng ứng dụng (Application Level) nhắm vào mục tiêu gì?", 
+            options: ["Gói tin TCP/IP", "Chiếm quyền kiểm soát phiên người dùng HTTP bằng cách lấy Session ID", "Địa chỉ MAC", "Cổng mạng"], 
+            correct: 1, 
+            explanation: "Slide 14: Application level is about gaining control on the HTTP's user session by obtaining the session ID's."
+        },
+        { 
+            q: "Man-in-the-Middle (MITM) Attack hoạt động như thế nào?", 
+            options: ["Hacker đứng giữa chia tách kết nối TCP thành 2 phần: Client-Attacker và Attacker-Server", "Hacker làm hỏng máy chủ", "Hacker đoán mật khẩu", "Hacker gửi virus"], 
+            correct: 0, 
+            explanation: "Slide 19: Split the TCP connection into two connections: Client-to-attacker and Attacker-to-server."
+        },
+        { 
+            q: "Man-in-the-Browser Attack sử dụng gì để chặn cuộc gọi giữa trình duyệt và cơ chế bảo mật?", 
+            options: ["Một Trojan Horse đã được cài đặt sẵn", "Một thiết bị phần cứng", "Một máy chủ DNS giả mạo", "Một kết nối VPN"], 
+            correct: 0, 
+            explanation: "Slide 20: Man-in-the-browser attack uses a Trojan Horse to intercept the calls."
+        },
+        { 
+            q: "Mục tiêu chính của Man-in-the-Browser Attack thường là gì?", 
+            options: ["Làm chậm máy tính", "Gian lận tài chính bằng cách thao túng giao dịch ngân hàng trực tuyến (Internet Banking)", "Xóa lịch sử duyệt web", "Thay đổi hình nền"], 
+            correct: 1, 
+            explanation: "Slide 20: Its main objective is to cause financial deceptions by manipulating transactions of Internet Banking systems."
+        },
+        { 
+            q: "Cross-Site Scripting (XSS) giúp hacker chiếm phiên làm việc bằng cách nào?", 
+            options: ["Tiêm mã độc (thường là JavaScript) vào trang web để lấy Session Token/Cookie của người dùng", "Tấn công từ chối dịch vụ", "Đoán mật khẩu", "Nghe lén mạng"], 
+            correct: 0, 
+            explanation: "Slide 24: Attacker sends crafted link... malicious JavaScript will run... send the cookie to the attacker."
+        },
+        { 
+            q: "Session Fixation Attack (Cố định phiên) là gì?", 
+            options: ["Hacker đoán Session ID", "Hacker cung cấp một Session ID hợp lệ cho nạn nhân và lừa họ đăng nhập sử dụng Session ID đó", "Hacker sửa lỗi phiên làm việc", "Hacker xóa phiên làm việc"], 
+            correct: 1, 
+            explanation: "Slide 27: Attacker provides a valid SID to a victim and lures him to authenticate himself using that SID."
+        },
+        { 
+            q: "Trong Session Fixation, Session ID có thể được truyền qua đâu?", 
+            options: ["URL argument", "Hidden form field", "Cookie", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 27: Session token in URL argument, Hidden form field, Cookie."
+        },
+        { 
+            q: "Để dự đoán Session Token (Predictable Session Token), hacker thường phân tích yếu tố nào?", 
+            options: ["Mẫu hình tạo ra Session ID (Pattern) dựa trên thời gian, ngày tháng, hoặc thuật toán tùy chỉnh", "Màu sắc trang web", "Tốc độ mạng", "Dung lượng ổ cứng"], 
+            correct: 0, 
+            explanation: "Slide 18: Attacker captures several session IDs and analyzes the pattern (Constant, Date, Time)."
+        },
+
+        // --- PHẦN 4: SESSION HIJACKING TẦNG MẠNG (Slide 30-42) ---
+        { 
+            q: "Session Hijacking tầng mạng (Network Level) tập trung vào luồng dữ liệu của giao thức nào?", 
+            options: ["HTTP", "TCP và UDP", "HTML", "FTP"], 
+            correct: 1, 
+            explanation: "Slide 30: Network level hijacking is implemented on the data flow... in a TCP and UDP session."
+        },
+        { 
+            q: "Blind Hijacking (Chiếm quyền mù) xảy ra khi nào?", 
+            options: ["Kẻ tấn công không thể nhìn thấy phản hồi từ máy chủ (do source routing bị tắt) nhưng vẫn có thể gửi dữ liệu/lệnh độc hại", "Kẻ tấn công không có màn hình", "Kẻ tấn công không biết IP", "Kẻ tấn công dùng Wifi"], 
+            correct: 0, 
+            explanation: "Slide 40: The attacker can send the data or comments but has no access to see the response."
+        },
+        { 
+            q: "Trong TCP/IP Hijacking, để chiếm quyền thành công, kẻ tấn công phải đoán đúng cái gì?", 
+            options: ["Mật khẩu admin", "Sequence Number (Số thứ tự)", "Địa chỉ MAC", "Cổng đang mở"], 
+            correct: 1, 
+            explanation: "Slide 32: An attacker must successfully guess the sequence numbers in order to hijack a session."
+        },
+        { 
+            q: "Sequence Number trong TCP là một bộ đếm bao nhiêu bit?", 
+            options: ["16-bit", "32-bit", "64-bit", "8-bit"], 
+            correct: 1, 
+            explanation: "Slide 32: They are a 32-bit counter."
+        },
+        { 
+            q: "Trong quá trình bắt tay 3 bước (3-way Handshake), Client gửi SYN với Sequence X, Server phản hồi bằng gói tin gì?", 
+            options: ["SYN Y, ACK X", "SYN Y, ACK X+1", "FIN Y, ACK X", "RST Y"], 
+            correct: 1, 
+            explanation: "Slide 31: SYN/ACK Seq: 7000, Ack: 4001 (Ví dụ Client Seq 4000 thì Server Ack 4001 - tức là X+1)."
+        },
+        { 
+            q: "IP Spoofing: Source Routed Packets là kỹ thuật gì?", 
+            options: ["Gửi gói tin với địa chỉ nguồn giả mạo và chỉ định đường đi (path) cho gói tin trả về để đến được máy kẻ tấn công", "Gửi gói tin IP ngẫu nhiên", "Đổi địa chỉ MAC", "Chặn gói tin"], 
+            correct: 0, 
+            explanation: "Slide 36: The packets are source-routed where the path to the destination IP can be specified by the attacker."
+        },
+        { 
+            q: "RST Hijacking liên quan đến việc gửi gói tin gì?", 
+            options: ["Gói tin SYN giả mạo", "Gói tin RST (Reset) giả mạo với địa chỉ nguồn spoofed để ngắt kết nối của nạn nhân", "Gói tin FIN", "Gói tin ACK"], 
+            correct: 1, 
+            explanation: "Slide 38: RST hijacking involves injecting an authentic-looking reset (RST) packet using spoofed source address."
+        },
+        { 
+            q: "UDP Hijacking khác với TCP Hijacking ở điểm nào?", 
+            options: ["UDP không cần đoán Sequence Number (vì UDP không kết nối/không tin cậy)", "UDP khó hơn", "UDP cần mật khẩu", "UDP chỉ dùng cho web"], 
+            correct: 0, 
+            explanation: "UDP là giao thức connectionless, không có sequence number phức tạp như TCP, nên việc inject packet dễ dàng hơn nếu chặn được (Slide 42 - Attacker sends forged reply)."
+        },
+        { 
+            q: "Man-in-the-Middle Attack sử dụng Packet Sniffer thường kết hợp với kỹ thuật nào để định tuyến lại gói tin?", 
+            options: ["ARP Spoofing", "Ping Sweep", "Port Scan", "Brute Force"], 
+            correct: 0, 
+            explanation: "Slide 41: Using Address Resolution Protocol (ARP) spoofing... ARP spoofing involves fooling the host."
+        },
+        { 
+            q: "Sau khi thực hiện TCP/IP Hijacking thành công, tình trạng kết nối của nạn nhân (Victim) sẽ như thế nào?", 
+            options: ["Hoạt động bình thường", "Bị treo (Hangs) hoặc mất đồng bộ (Desynchronized)", "Tăng tốc độ", "Tự động đăng xuất"], 
+            correct: 1, 
+            explanation: "Slide 35: The victim's connection hangs... attacker forces the victim's connection... to a desynchronized state."
+        },
+
+        // --- PHẦN 5: CÔNG CỤ (Slide 43-48) ---
+        { 
+            q: "Paros Proxy là công cụ gì?", 
+            options: ["Máy quét virus", "Man-in-the-middle proxy và scanner lỗ hổng ứng dụng web", "Công cụ bẻ khóa Wifi", "Trình duyệt web"], 
+            correct: 1, 
+            explanation: "Slide 43: Paros is a man-in-the-middle proxy and application vulnerability scanner."
+        },
+        { 
+            q: "Burp Suite cho phép kẻ tấn công làm gì?", 
+            options: ["Kiểm tra, sửa đổi lưu lượng giữa trình duyệt và ứng dụng đích (Intercept & Modify)", "Chỉ xem lưu lượng", "Tấn công DDoS", "Tạo virus"], 
+            correct: 0, 
+            explanation: "Slide 45: Burp suite allows attacker to inspect and modify traffic between browser and the target application."
+        },
+        { 
+            q: "Firesheep là công cụ gì?", 
+            options: ["Phần mềm diệt virus", "Extension của Firefox dùng để ăn cắp Session ID trên mạng Wifi không an toàn (Sidejacking)", "Công cụ quản lý mạng", "Game online"], 
+            correct: 1, 
+            explanation: "Slide 46: Firesheep is an extension for the Firefox web browser which allows attacker to steal a valid session ID."
+        },
+        { 
+            q: "Firesheep hoạt động hiệu quả trên môi trường nào?", 
+            options: ["Mạng có dây bảo mật cao", "Mạng Wifi công cộng không mã hóa (Open Wifi)", "Mạng VPN", "Mạng nội bộ kín"], 
+            correct: 1, 
+            explanation: "Slide 47: ...truy cập các website không được mã hóa từ các điểm truy cập Wi-Fi công cộng."
+        },
+        { 
+            q: "Công cụ nào sau đây KHÔNG phải là công cụ Session Hijacking được liệt kê?", 
+            options: ["Hamster", "Hunt", "Nmap", "Ferret"], 
+            correct: 2, 
+            explanation: "Slide 48 liệt kê Hamster, Hunt, Session Thief, JHijack, Surf Jack, Ettercap, Ferret. Nmap là công cụ quét mạng."
+        },
+
+        // --- PHẦN 6: BIỆN PHÁP PHÒNG CHỐNG (Slide 49-60) ---
+        { 
+            q: "Biện pháp hiệu quả nhất để phòng chống Session Hijacking là gì?", 
+            options: ["Sử dụng giao thức bảo mật (SSL/HTTPS, SSH, VPN) để mã hóa dữ liệu truyền đi", "Dùng mật khẩu dài", "Ẩn địa chỉ IP", "Tắt màn hình"], 
+            correct: 0, 
+            explanation: "Slide 49 & 53: Use secure shell (SSL)... Use encrypted protocols... (Encryption prevents sniffing Session IDs)."
+        },
+        { 
+            q: "Web Developer nên làm gì để ngăn chặn Session Fixation?", 
+            options: ["Tăng thời gian hết hạn phiên", "Tái tạo (Regenerate) Session ID sau khi đăng nhập thành công", "Cho phép Session ID trong URL", "Dùng Session ID ngắn"], 
+            correct: 1, 
+            explanation: "Slide 51: Regenerate the session id after a successful login to prevent session fixation attack."
+        },
+        { 
+            q: "IPSec (Internet Protocol Security) là gì?", 
+            options: ["Giao thức web", "Bộ giao thức hỗ trợ trao đổi gói tin an toàn ở tầng IP (Network Layer)", "Phần mềm diệt virus", "Hệ điều hành"], 
+            correct: 1, 
+            explanation: "Slide 55: IPSec is a set of protocols developed by the IETF to support the secure exchange of packets at the IP layer."
+        },
+        { 
+            q: "Chế độ 'Transport Mode' của IPSec hoạt động như thế nào?", 
+            options: ["Mã hóa toàn bộ gói tin (cả header)", "Chỉ mã hóa phần dữ liệu (payload), header IP vẫn giữ nguyên", "Không mã hóa gì cả", "Dùng cho VPN gateway"], 
+            correct: 1, 
+            explanation: "Slide 56: Transport Mode... Has an option to encrypt data transfer (thường dùng cho host-to-host). Tunnel Mode encapsulates packets."
+        },
+        { 
+            q: "Chế độ 'Tunnel Mode' của IPSec thường dùng cho mục đích gì?", 
+            options: ["Kết nối Host-to-Host", "VPN (Virtual Private Networks) - Đóng gói toàn bộ gói tin IP", "Kết nối mạng LAN", "Truyền file FTP"], 
+            correct: 1, 
+            explanation: "Slide 56: Tunnel Mode - Encapsulates packets being transferred (Not compatible with NAT in standard form without traversal)."
+        },
+        { 
+            q: "Giao thức AH (Authentication Header) trong IPSec cung cấp dịch vụ gì?", 
+            options: ["Mã hóa dữ liệu", "Xác thực nguồn gốc dữ liệu (Data origin authentication) và tính toàn vẹn, nhưng KHÔNG mã hóa", "Nén dữ liệu", "Định tuyến"], 
+            correct: 1, 
+            explanation: "Slide 58: Authentication Header (AH) provides data authentication of the sender (không đề cập encryption)."
+        },
+        { 
+            q: "Giao thức ESP (Encapsulation Security Payload) trong IPSec cung cấp dịch vụ gì?", 
+            options: ["Chỉ xác thực", "Cả xác thực và mã hóa (confidentiality)", "Chỉ mã hóa", "Chỉ nén"], 
+            correct: 1, 
+            explanation: "Slide 58: ESP provides both data authentication and encryption (confidentiality)."
+        },
+        { 
+            q: "Giao thức IKE (Internet Key Exchange) trong kiến trúc IPSec dùng để làm gì?", 
+            options: ["Mã hóa dữ liệu", "Tạo và trao đổi khóa bảo mật (Security keys) cho IPSec", "Nén dữ liệu", "Kiểm tra lỗi"], 
+            correct: 1, 
+            explanation: "Slide 59: IKE - IPSec protocol that produces security keys."
+        },
+        { 
+            q: "Để bảo vệ cookie, người dùng nên làm gì?", 
+            options: ["Chia sẻ cookie cho bạn bè", "Xóa lịch sử, cache và cookie sau mỗi giao dịch nhạy cảm", "Lưu cookie mãi mãi", "Tắt tường lửa"], 
+            correct: 1, 
+            explanation: "Slide 52: Make sure you clear history, offline content, and cookies... after every confidential... transaction."
+        },
+        { 
+            q: "Khái niệm 'Defense in Depth' (Phòng thủ theo chiều sâu) nghĩa là gì?", 
+            options: ["Sử dụng một lớp bảo vệ duy nhất nhưng rất mạnh", "Sử dụng nhiều lớp bảo vệ (hệ thống/công nghệ) khác nhau để nếu một lớp hỏng thì vẫn còn lớp khác", "Tấn công lại hacker", "Đào hầm sâu"], 
+            correct: 1, 
+            explanation: "Slide 54: Practice of using multiple security systems... if one counter measure fails, there are additional levels."
+        },
+
+        // --- PHẦN 7: KIỂM THỬ HỆ THỐNG (Slide 61-62) ---
+        { 
+            q: "Bước đầu tiên trong quy trình 'Session Hijacking Pen Testing' là gì?", 
+            options: ["Locate a session (Xác định một phiên làm việc)", "Brute force session ID", "Sniff traffic", "Crack encryption"], 
+            correct: 0, 
+            explanation: "Slide 61 (Sơ đồ): START -> Locate a session."
+        },
+        { 
+            q: "Nếu Session ID được sử dụng trong URL, kiểm thử viên nên làm gì?", 
+            options: ["Bỏ qua", "Sniff session traffic hoặc dùng proxy để bắt gói tin", "Dùng SQL Injection", "Tắt trình duyệt"], 
+            correct: 1, 
+            explanation: "Slide 61: Session ID is used in URL? -> Sniff session traffic... Use proxy server trojans."
+        },
+        { 
+            q: "Nếu Session ID không được tìm thấy dễ dàng, bước tiếp theo trong quy trình kiểm thử là gì?", 
+            options: ["Bruteforce Session IDs hoặc Predict a new session ID", "Dừng kiểm thử", "Báo cáo lỗi", "Cài lại Win"], 
+            correct: 0, 
+            explanation: "Slide 62: Collect several session IDs -> Bruteforce Session IDs / Predict a new session ID."
+        },
+        { 
+            q: "Mục đích của việc 'Collect several session IDs' trong kiểm thử là gì?", 
+            options: ["Để lưu làm kỷ niệm", "Để phân tích mẫu (pattern) và dự đoán Session ID mới", "Để làm đầy ổ cứng", "Để gửi cho admin"], 
+            correct: 1, 
+            explanation: "Slide 62: Predict a new session ID (cần thu thập mẫu trước)."
+        },
+        { 
+            q: "Bước cuối cùng của quy trình Session Hijacking Pen Testing là gì?", 
+            options: ["Document all the findings (Ghi lại kết quả)", "Xóa dấu vết", "Tấn công server", "Ăn cắp tiền"], 
+            correct: 0, 
+            explanation: "Slide 62: Document all the findings."
+        },
+        { 
+            q: "Trong kiểm thử, nếu Session ID được mã hóa, bước tiếp theo là gì?", 
+            options: ["Crack session ID encryption (Base64, Hex...)", "Bỏ cuộc", "Dùng Brute force ngay", "Gửi email hỏi admin"], 
+            correct: 0, 
+            explanation: "Slide 61: Crack session ID encryption... if it is URL encoded, Base64, Hex..."
+        },
+        { 
+            q: "Oakley là giao thức gì trong IPSec?", 
+            options: ["Giao thức nén", "Giao thức sử dụng thuật toán Diffie-Hellman để tạo khóa chủ (Master key) và khóa phiên", "Giao thức định tuyến", "Giao thức web"], 
+            correct: 1, 
+            explanation: "Slide 59: Oakley - uses Diffie-Hellman algorithm to create master key."
+        },
+        { 
+            q: "Cookie chứa thông tin gì quan trọng nhất đối với Session Hijacking?", 
+            options: ["Màu nền trang web", "Session ID / Session Token xác thực người dùng", "Tên trình duyệt", "Độ phân giải màn hình"], 
+            correct: 1, 
+            explanation: "Slide 23: JSESSIONID... (Session ID thường nằm trong Cookie)."
+        },
+        { 
+            q: "Tại sao nên sử dụng nút 'Logout' thay vì chỉ đóng trình duyệt?", 
+            options: ["Để tiết kiệm điện", "Để máy chủ hủy bỏ phiên làm việc (Expire session), ngăn chặn việc tái sử dụng Session ID cũ", "Để trình duyệt chạy nhanh hơn", "Để xóa lịch sử"], 
+            correct: 1, 
+            explanation: "Slide 51: Expire the session as soon as the user logs out."
+        },
+        { 
+            q: "Thuật ngữ 'Session Desynchronization' liên quan đến kỹ thuật tấn công nào?", 
+            options: ["TCP/IP Hijacking", "Session Fixation", "Brute Force", "XSS"], 
+            correct: 0, 
+            explanation: "Slide 11: Session Desynchronization -> Break the connection to the victim's machine (trong ngữ cảnh TCP Hijacking)."
+        },
+        { 
+            q: "Một cuộc tấn công Session Hijacking thành công có thể dẫn đến hậu quả gì?", 
+            options: ["Mất danh tính (Identity Theft)", "Mất thông tin", "Gian lận", "Tất cả các đáp án trên"], 
+            correct: 3, 
+            explanation: "Slide 4: Threat of identity theft, information loss, fraud, etc."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 45) msgEl.innerText = "Tuyệt vời! Bạn nắm rất vững kiến thức về Session Hijacking.";
+        else if (score >= 35) msgEl.innerText = "Khá tốt! Hãy ôn lại phần Network Hijacking và IPSec.";
+        else msgEl.innerText = "Bạn cần đọc kỹ lại slide để nắm chắc kiến thức.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

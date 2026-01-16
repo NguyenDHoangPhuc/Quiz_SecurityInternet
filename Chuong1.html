@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet (Instant Feedback)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Bảo mật Internet - Chương 1</h1>
+        <p class="subtitle">Trắc nghiệm tương tác - ĐH Công nghệ Thông tin (UIT)</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/50</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/50
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 50 câu hỏi kèm giải thích
+    const quizData = [
+        { 
+            q: "Theo thống kê các hoạt động online trong 60 giây, nền tảng nào có số lượng tin nhắn được gửi đi nhiều nhất (29 triệu tin)?", 
+            options: ["Facebook", "Email", "WhatsApp", "Skype"], 
+            correct: 2, 
+            explanation: "Dựa vào biểu đồ tròn 'Các hoạt động online trong 60 giây' (Trang 7), WhatsApp chiếm 29 Million messages sent, cao nhất trong các nền tảng nhắn tin được liệt kê."
+        },
+        { 
+            q: "Theo biểu đồ 'Breach by Source', đối tượng nào chiếm tỷ lệ cao nhất gây ra các vụ rò rỉ dữ liệu (chiếm hơn 55%)?", 
+            options: ["Malicious Insider (Nội bộ nguy hại)", "Malicious Outsider (Kẻ tấn công bên ngoài)", "Accidental Loss (Mất mát ngẫu nhiên)", "Hacktivist (Tin tặc chính trị)"], 
+            correct: 1, 
+            explanation: "Theo biểu đồ 'Breach by Source' (Trang 8), phần màu vàng lớn nhất chiếm 55.28% tương ứng với Malicious Outsider."
+        },
+        { 
+            q: "Theo thống kê về loại dữ liệu bị đánh cắp theo ngành (Industry), ngành nào chiếm tỷ lệ cao nhất?", 
+            options: ["Retail (Bán lẻ)", "Financial (Tài chính)", "Technology (Công nghệ)", "Healthcare (Y tế)"], 
+            correct: 2, 
+            explanation: "Theo biểu đồ 'Data Records Lost/Stolen by Industry' (Trang 8), mảng Technology chiếm tỷ lệ lớn nhất là 56.59%."
+        },
+        { 
+            q: "Theo thống kê phân bố mã độc trên Windows (Q1/Q2 2016), loại nào chiếm tỷ lệ cao nhất (49.20%)?", 
+            options: ["Trojans", "Viruses", "Worms", "Ransomware"], 
+            correct: 1, 
+            explanation: "Theo biểu đồ 'Distribution of malware Q1/Q2 2016' (Trang 13), Viruses chiếm 49.20%, đứng đầu danh sách."
+        },
+        { 
+            q: "Báo cáo IC3 năm 2017 chỉ ra loại tội phạm nào gây thiệt hại tài chính lớn nhất ($676,151,185)?", 
+            options: ["Credit Card Fraud", "Business E-Mail Compromise (BEC)", "Identity Theft", "Ransomware"], 
+            correct: 1, 
+            explanation: "Trong bảng 'Top 10 Crime Types Reported to IC3 in 2017' (Trang 12), BEC/E-Mail Account Compromise gây thiệt hại lớn nhất là $676,151,185."
+        },
+        { 
+            q: "Ba yếu tố cốt lõi trong tam giác bảo mật C.I.A là gì?", 
+            options: ["Confidentiality, Integrity, Authorization", "Confidentiality, Integrity, Availability", "Control, Integrity, Availability", "Confidentiality, Identity, Availability"], 
+            correct: 1, 
+            explanation: "Tam giác bảo mật (Trang 14) bao gồm 3 phần tử: Confidentiality (Bảo mật), Integrity (Toàn vẹn), và Availability (Sẵn sàng)."
+        },
+        { 
+            q: "Khái niệm 'Confidentiality' (Tính bảo mật) đảm bảo điều gì?", 
+            options: ["Thông tin luôn sẵn sàng khi cần thiết", "Thông tin không bị thay đổi trái phép", "Thông tin chỉ được truy cập bởi những người được ủy quyền", "Người gửi không thể chối bỏ việc đã gửi tin"], 
+            correct: 2, 
+            explanation: "Theo định nghĩa trang 14: Confidentiality là sự đảm bảo thông tin chỉ có thể truy cập bởi những người được ủy quyền (accessible only to those authorized)."
+        },
+        { 
+            q: "'Integrity' (Tính toàn vẹn) liên quan đến khía cạnh nào của dữ liệu?", 
+            options: ["Sự tin cậy của dữ liệu trong việc ngăn chặn thay đổi trái phép", "Đảm bảo hệ thống luôn hoạt động 24/7", "Mã hóa dữ liệu để không ai đọc được", "Xác thực danh tính người dùng"], 
+            correct: 0, 
+            explanation: "Theo định nghĩa trang 14: Integrity là sự tin cậy của dữ liệu nhằm ngăn chặn những thay đổi không đúng hoặc trái phép (preventing improper and unauthorized changes)."
+        },
+        { 
+            q: "Yếu tố nào đảm bảo rằng một bên trong giao dịch không thể phủ nhận tính xác thực của chữ ký hoặc việc gửi tin nhắn của họ?", 
+            options: ["Authenticity (Tính xác thực)", "Non-Repudiation (Tính không chối bỏ)", "Availability (Tính sẵn sàng)", "Confidentiality (Tính bảo mật)"], 
+            correct: 1, 
+            explanation: "Theo trang 15: Non-Repudiation đảm bảo một bên không thể từ chối tính xác thực của chữ ký hoặc việc gửi tin nhắn mà họ đã tạo ra."
+        },
+        { 
+            q: "Tam giác bảo mật (Security Triangle) thể hiện mối quan hệ đánh đổi giữa ba yếu tố nào?", 
+            options: ["Security, Functionality, Usability", "Security, Performance, Cost", "Confidentiality, Integrity, Availability", "Threat, Vulnerability, Risk"], 
+            correct: 0, 
+            explanation: "Hình vẽ Tam giác bảo mật ở Trang 16 cho thấy sự cân bằng giữa: Security (Bảo mật), Functionality (Chức năng), và Usability (Tính dễ dùng)."
+        },
+        { 
+            q: "Một trong những thách thức của bảo mật trong môi trường tính toán phân tán là gì?", 
+            options: ["Khó khăn trong việc tập trung hóa bảo mật (centralize security)", "Chi phí phần cứng quá cao", "Thiếu nhân sự lập trình", "Tốc độ mạng chậm"], 
+            correct: 0, 
+            explanation: "Trang 17 đề cập đến thách thức: 'It is difficult to centralize security in a distributed computing environment'."
+        },
+        { 
+            q: "Đâu là một trong những 'Top Security Challenges' được liệt kê?", 
+            options: ["Sự gia tăng của tội phạm mạng tinh vi", "Sự giảm giá của phần cứng", "Sự phổ biến của mã nguồn mở", "Sự thiếu hụt băng thông"], 
+            correct: 0, 
+            explanation: "Trang 18 liệt kê 'Increase in sophisticated cyber criminals' (Sự gia tăng tội phạm mạng tinh vi) là thách thức số 1."
+        },
+        { 
+            q: "'Spam zombies' hay 'spam bots' là thuật ngữ dùng để chỉ điều gì?", 
+            options: ["Các email rác", "Các máy tính bị tấn công và sử dụng để gửi spam", "Phần mềm diệt virus", "Hacker mũ đen"], 
+            correct: 1, 
+            explanation: "Trang 19 ghi rõ: Attackers may also use these PCs as 'spam zombies' or 'spam bots' (Kẻ tấn công dùng các máy tính bị chiếm quyền để gửi spam)."
+        },
+        { 
+            q: "Hành động nào sau đây được phân loại là 'Network Threats' (Mối đe dọa mạng)?", 
+            options: ["Privilege escalation (Leo thang đặc quyền)", "SQL injection", "Sniffing and eavesdropping (Nghe lén)", "Input validation error"], 
+            correct: 2, 
+            explanation: "Trang 20 và 34 phân loại 'Sniffing and eavesdropping' thuộc nhóm Network Threats. SQL Injection là Application threat; Privilege escalation là Host threat."
+        },
+        { 
+            q: "Hành động nào sau đây được phân loại là 'Application Threats' (Mối đe dọa ứng dụng)?", 
+            options: ["ARP Poisoning", "Password cracking", "SQL Injection", "War dialing"], 
+            correct: 2, 
+            explanation: "Trang 20 và 34 phân loại 'SQL Injection' thuộc nhóm Application Threats (Tấn công vào ứng dụng)."
+        },
+        { 
+            q: "Hacker mũ trắng (White Hats) còn được gọi là gì?", 
+            options: ["Crackers", "Security Analysts", "Hacktivists", "Script Kiddies"], 
+            correct: 1, 
+            explanation: "Trang 23 định nghĩa White Hats là những cá nhân dùng kỹ năng cho mục đích phòng thủ và còn được gọi là Security Analysts."
+        },
+        { 
+            q: "Đặc điểm chính của 'Suicide Hackers' là gì?", 
+            options: ["Tấn công vì tiền", "Tấn công để học hỏi", "Tấn công hạ tầng quan trọng vì một 'lý tưởng' và không lo sợ ngồi tù", "Tấn công cả hai phe thiện và ác"], 
+            correct: 2, 
+            explanation: "Trang 23 mô tả Suicide Hackers là những người nhắm vào hạ tầng quan trọng vì một 'nguyên nhân' (cause) và không lo lắng về việc ngồi tù 30 năm."
+        },
+        { 
+            q: "Nhóm hacker nào hoạt động cả tấn công (offensive) và phòng thủ (defensive) tùy thời điểm?", 
+            options: ["Black Hats", "White Hats", "Gray Hats", "Suicide Hackers"], 
+            correct: 2, 
+            explanation: "Trang 23 định nghĩa Gray Hats là những người làm việc cả tấn công và phòng thủ vào những thời điểm khác nhau."
+        },
+        { 
+            q: "Kỹ năng nào KHÔNG được liệt kê là kỹ năng cần thiết của một Ethical Hacker?", 
+            options: ["Kiến thức sâu về nền tảng (Windows, Unix, Linux)", "Kiến thức về mạng và phần cứng liên quan", "Kỹ năng quản lý tài chính doanh nghiệp", "Kiến thức về bảo mật và các vấn đề liên quan"], 
+            correct: 2, 
+            explanation: "Trang 24 liệt kê các kỹ năng: Platform, Network, Security, Computer Expert, Technical knowledge. Kỹ năng tài chính không được đề cập."
+        },
+        { 
+            q: "Hacktivism là hành động hacking nhằm mục đích gì?", 
+            options: ["Trục lợi tài chính", "Thúc đẩy một chương trình nghị sự chính trị (political agenda)", "Thử nghiệm kỹ năng cá nhân", "Ăn cắp thẻ tín dụng"], 
+            correct: 1, 
+            explanation: "Trang 25 định nghĩa: Hacktivism is an act of promoting a political agenda by hacking (Thúc đẩy chương trình chính trị bằng cách hack)."
+        },
+        { 
+            q: "Thứ tự đúng của 5 giai đoạn tấn công (Hacking Phases) là gì?", 
+            options: ["Scanning -> Reconnaissance -> Gaining Access -> Maintaining Access -> Clearing Tracks", "Reconnaissance -> Scanning -> Gaining Access -> Maintaining Access -> Clearing Tracks", "Reconnaissance -> Gaining Access -> Scanning -> Maintaining Access -> Clearing Tracks", "Scanning -> Gaining Access -> Reconnaissance -> Maintaining Access -> Clearing Tracks"], 
+            correct: 1, 
+            explanation: "Sơ đồ ở trang 26 chỉ rõ thứ tự: 1. Reconnaissance -> 2. Scanning -> 3. Gaining Access -> 4. Maintaining Access -> 5. Clearing Track."
+        },
+        { 
+            q: "Giai đoạn 'Reconnaissance' (Thăm dò) là gì?", 
+            options: ["Giai đoạn tiền tấn công, thu thập thông tin về mục tiêu", "Giai đoạn quét mạng để tìm cổng mở", "Giai đoạn xâm nhập vào hệ điều hành", "Giai đoạn cài đặt backdoor"], 
+            correct: 0, 
+            explanation: "Trang 27: Reconnaissance là giai đoạn chuẩn bị nơi kẻ tấn công tìm kiếm thông tin về mục tiêu trước khi tấn công."
+        },
+        { 
+            q: "Sự khác biệt giữa Passive Reconnaissance (Thăm dò bị động) và Active Reconnaissance (Thăm dò chủ động) là gì?", 
+            options: ["Bị động sử dụng công cụ quét, Chủ động tìm kiếm trên Google", "Bị động không tương tác trực tiếp với mục tiêu, Chủ động tương tác trực tiếp", "Bị động tương tác trực tiếp, Chủ động không tương tác", "Cả hai đều tương tác trực tiếp"], 
+            correct: 1, 
+            explanation: "Trang 28: Passive không tương tác trực tiếp (ví dụ tìm tin tức), Active tương tác trực tiếp (ví dụ gọi điện thoại)."
+        },
+        { 
+            q: "Hoạt động nào sau đây thuộc về 'Active Reconnaissance'?", 
+            options: ["Tìm kiếm trên báo chí", "Tìm kiếm hồ sơ công khai", "Gọi điện thoại đến bộ phận kỹ thuật (Help desk)", "Theo dõi tin tức"], 
+            correct: 2, 
+            explanation: "Trang 28 đưa ví dụ cho Active Reconnaissance là: 'telephone calls to the help desk or technical department'."
+        },
+        { 
+            q: "Giai đoạn 'Scanning' thường bao gồm việc sử dụng các công cụ nào?", 
+            options: ["Port scanners, network mapping, vulnerability scanners", "Trojans, Virus", "Social Engineering", "Steganography tools"], 
+            correct: 0, 
+            explanation: "Trang 29: Scanning có thể sử dụng dialers, port scanners, network mapping, vulnerability scanners."
+        },
+        { 
+            q: "Mục tiêu chính của giai đoạn 'Gaining Access' là gì?", 
+            options: ["Thu thập địa chỉ IP", "Có được quyền truy cập vào hệ điều hành hoặc ứng dụng", "Xóa nhật ký hệ thống", "Quét các cổng mở"], 
+            correct: 1, 
+            explanation: "Trang 30: Gaining access refers to the point where the attacker obtains access to the operating system or applications."
+        },
+        { 
+            q: "Trong giai đoạn 'Maintaining Access', kẻ tấn công thường làm gì để giữ quyền kiểm soát?", 
+            options: ["Thực hiện SQL Injection", "Sử dụng Backdoors, RootKits hoặc Trojans", "Thực hiện DoS", "Quét lỗ hổng"], 
+            correct: 1, 
+            explanation: "Trang 31: Kẻ tấn công đảm bảo quyền truy cập độc quyền bằng Backdoors, RootKits, hoặc Trojans."
+        },
+        { 
+            q: "Tại sao kẻ tấn công cần thực hiện giai đoạn 'Clearing Tracks' (Xóa dấu vết)?", 
+            options: ["Để làm hỏng hệ thống nhanh hơn", "Để tránh bị phát hiện, tránh bị truy tố và tiếp tục truy cập hệ thống", "Để tăng tốc độ mạng của nạn nhân", "Để cài đặt thêm virus"], 
+            correct: 1, 
+            explanation: "Trang 32: Mục đích là ẩn danh tính, tránh bị nghi ngờ, tránh bị truy tố và tiếp tục duy trì truy cập."
+        },
+        { 
+            q: "Một kỹ thuật phổ biến để xóa dấu vết là gì?", 
+            options: ["Ghi đè (overwrite) các log của server, hệ thống và ứng dụng", "Gửi email thông báo cho admin", "Tắt màn hình máy tính nạn nhân", "Rút dây mạng"], 
+            correct: 0, 
+            explanation: "Trang 32: 'The attacker overwrites the server, system, and application logs to avoid suspicion'."
+        },
+        { 
+            q: "Privilege Escalation (Leo thang đặc quyền) thường diễn ra ở giai đoạn nào?", 
+            options: ["Reconnaissance", "Scanning", "Gaining Access", "Clearing Tracks"], 
+            correct: 2, 
+            explanation: "Trang 30 (Gaining Access): 'The attacker can escalate privileges to obtain complete control of the system'."
+        },
+        { 
+            q: "Tấn công vào hệ điều hành (OS Attacks) thường khai thác điều gì?", 
+            options: ["Lỗ hổng trong cấu hình người dùng", "Các lỗ hổng của OS như Buffer overflow, OS chưa được vá lỗi", "Lỗi đánh máy của nhân viên", "Sự cố mất điện"], 
+            correct: 1, 
+            explanation: "Trang 37 liệt kê các lỗ hổng OS: Buffer overflow, Bugs in OS, Unpatched OS."
+        },
+        { 
+            q: "Tấn công 'Shrink wrap code attacks' là gì?", 
+            options: ["Tấn công vào mã nguồn tự viết của doanh nghiệp", "Tấn công khai thác các thư viện/script có sẵn đi kèm với OS/Ứng dụng mà chưa được tinh chỉnh", "Tấn công vật lý vào đĩa CD cài đặt", "Tấn công vào dây chuyền đóng gói phần mềm"], 
+            correct: 1, 
+            explanation: "Trang 39 giải thích: Khi cài OS/App có kèm các script mẫu. Việc không tinh chỉnh (fine tuning) dẫn đến dùng code mặc định dễ bị tấn công."
+        },
+        { 
+            q: "'Misconfiguration attacks' (Tấn công cấu hình sai) xảy ra khi nào?", 
+            options: ["Khi quản trị viên quên mật khẩu", "Khi hệ thống không được loại bỏ các dịch vụ dư thừa hoặc để cài đặt mặc định", "Khi hệ thống bị nhiễm virus", "Khi phần cứng bị hỏng"], 
+            correct: 1, 
+            explanation: "Trang 40: Xảy ra khi dùng cài đặt mặc định (default settings), không xóa dịch vụ dư thừa, hoặc thay đổi quyền hạn file không đúng."
+        },
+        { 
+            q: "Lỗi nào sau đây thuộc về tấn công mức ứng dụng (Application-level attacks)?", 
+            options: ["Buffer overflow, SQL injection, Cross-site scripting", "Sniffing, Spoofing", "War dialing", "Password guessing"], 
+            correct: 0, 
+            explanation: "Trang 38 liệt kê Application-level attacks bao gồm: Buffer overflow, SQL injection, Cross-site scripting (XSS)..."
+        },
+        { 
+            q: "Kỹ thuật nào cho phép kẻ tấn công giả mạo danh tính của một người dùng hoặc máy tính khác?", 
+            options: ["Snooping", "Spoofing", "Sniffing", "Scanning"], 
+            correct: 1, 
+            explanation: "Trong an toàn thông tin, Spoofing (Giả mạo) là kỹ thuật kẻ tấn công giả danh một thực thể hợp lệ (như IP, Email, User)."
+        },
+        { 
+            q: "Tấn công từ chối dịch vụ (DoS) nhằm mục đích gì?", 
+            options: ["Ăn cắp dữ liệu", "Làm cho hệ thống hoặc tài nguyên không khả dụng với người dùng hợp lệ", "Chiếm quyền điều khiển server", "Nghe lén thông tin"], 
+            correct: 1, 
+            explanation: "DoS (Denial of Service) tấn công vào tính Availability (Sẵn sàng) của hệ thống, làm cho dịch vụ bị gián đoạn."
+        },
+        { 
+            q: "'Man-in-the-Middle Attack' là hình thức tấn công vào đâu?", 
+            options: ["Vào cơ sở dữ liệu offline", "Vào phiên giao tiếp giữa hai bên để nghe lén hoặc thay đổi dữ liệu", "Vào phần cứng máy chủ", "Vào mã nguồn ứng dụng"], 
+            correct: 1, 
+            explanation: "MitM là tấn công nghe lén hoặc thay đổi thông tin khi nó đang được truyền giữa hai bên (Session hijacking and Man-in-the-Middle attack - Slide 34)."
+        },
+        { 
+            q: "Bốn thành phần của mô hình bảo mật cơ bản được liệt kê trong slide là gì?", 
+            options: ["Antivirus, Firewall, User, Data", "Cryptosystem, AMS software, IDS system, Firewall", "Policy, Procedure, People, Technology", "Router, Switch, Server, PC"], 
+            correct: 1, 
+            explanation: "Trang 42 liệt kê 4 thành phần: cryptosystem, AMS software, IDS system, và Firewall."
+        },
+        { 
+            q: "Trong mô hình 'Defense in Depth' (Phòng thủ theo chiều sâu), lớp trong cùng cần bảo vệ là gì?", 
+            options: ["Policies (Chính sách)", "Data (Dữ liệu)", "Host (Máy chủ)", "Perimeter (Vành đai)"], 
+            correct: 1, 
+            explanation: "Sơ đồ trang 43 cho thấy Data (Dữ liệu) nằm ở lõi trong cùng, được bao bọc bởi các lớp Application, Host, Network, Perimeter..."
+        },
+        { 
+            q: "Chính sách nào xác định ai có quyền truy cập từ xa và các biện pháp kiểm soát bảo mật đi kèm?", 
+            options: ["Access Control Policy", "Remote-Access Policy", "Firewall-Management Policy", "User-Account Policy"], 
+            correct: 1, 
+            explanation: "Trang 44: Remote-Access Policy định nghĩa ai có thể truy cập từ xa và các kiểm soát an ninh phương tiện truy cập."
+        },
+        { 
+            q: "'Acceptable-Use Policy' (Chính sách chấp nhận sử dụng) quy định điều gì?", 
+            options: ["Cách cấu hình tường lửa", "Việc sử dụng tài nguyên hệ thống sao cho chấp nhận được (hợp lệ)", "Cách tạo mật khẩu mạnh", "Quy trình tạo tài khoản người dùng"], 
+            correct: 1, 
+            explanation: "Trang 44: Acceptable-Use Policy định nghĩa việc sử dụng tài nguyên hệ thống sao cho chấp nhận được (defines the acceptable use of system resources)."
+        },
+        { 
+            q: "Chính sách nào xác định mức độ nhạy cảm của thông tin và cách lưu trữ/truyền tải nó?", 
+            options: ["Information-Protection Policy", "Special-Access Policy", "Network-Connection Policy", "Email Security Policy"], 
+            correct: 0, 
+            explanation: "Trang 44: Information-Protection Policy định nghĩa mức độ nhạy cảm, ai được truy cập, cách lưu trữ và truyền tải."
+        },
+        { 
+            q: "Penetration Testing (Kiểm thử xâm nhập) là gì?", 
+            options: ["Phương pháp đánh giá bảo mật thụ động", "Phương pháp đánh giá tích cực bằng cách mô phỏng một cuộc tấn công", "Quá trình cài đặt phần mềm diệt virus", "Quá trình cấu hình tường lửa"], 
+            correct: 1, 
+            explanation: "Trang 48: Penetration testing is a method of actively evaluating... by simulating an attack from a malicious source."
+        },
+        { 
+            q: "'Black box testing' mô phỏng cuộc tấn công từ đối tượng nào?", 
+            options: ["Người có đầy đủ kiến thức về hệ thống", "Người hoàn toàn không biết gì về hệ thống (như kẻ tấn công bên ngoài)", "Nhân viên nội bộ", "Quản trị viên hệ thống"], 
+            correct: 1, 
+            explanation: "Trang 48: Black box testing simulates an attack from someone who is unfamiliar with the system (không quen thuộc với hệ thống)."
+        },
+        { 
+            q: "'White box testing' mô phỏng cuộc tấn công từ đối tượng nào?", 
+            options: ["Người không biết gì về hệ thống", "Kẻ tấn công có kiến thức về hệ thống", "Hacker mũ đen", "Script Kiddie"], 
+            correct: 1, 
+            explanation: "Trang 48: White box testing simulates an attacker that has knowledge about the system (có kiến thức về hệ thống)."
+        },
+        { 
+            q: "Một trong những lợi ích của việc kiểm tra hệ thống (Penetration Testing) là gì?", 
+            options: ["Giảm chi phí phần cứng", "Tăng tốc độ internet", "Cung cấp đánh giá toàn diện về chính sách, quy trình và thiết kế bảo mật", "Tự động xóa virus"], 
+            correct: 2, 
+            explanation: "Trang 49: Provide an organization with assurance - a thorough and comprehensive assessment of organizational security covering policy, procedure, design..."
+        },
+        { 
+            q: "Lợi ích tài chính của Penetration Testing được đề cập là gì?", 
+            options: ["Tăng doanh thu bán hàng", "Giảm chi phí CNTT và mang lại lợi tức đầu tư an ninh (ROSI) tốt hơn", "Giảm thuế thu nhập doanh nghiệp", "Tăng lương cho nhân viên"], 
+            correct: 1, 
+            explanation: "Trang 49: Reduce an organization's IT security costs and provide a better return on security investment (ROSI)."
+        },
+        { 
+            q: "Hình thức kiểm thử nào đánh giá sự an toàn của nhân viên trước các kỹ thuật lừa đảo?", 
+            options: ["Wireless Network Penetration Testing", "Social Engineering Penetration Testing", "Database Penetration Testing", "DoS Penetration Testing"], 
+            correct: 1, 
+            explanation: "Trang 50: Social Engineering Penetration Testing (góc dưới bên trái sơ đồ) dùng để kiểm tra yếu tố con người trước các đòn lừa đảo."
+        },
+        { 
+            q: "Website nào sau đây là cơ sở dữ liệu lỗ hổng bảo mật quốc gia của Mỹ?", 
+            options: ["Secunia", "NIST (National Vulnerability Database)", "SecurityFocus", "TechNet"], 
+            correct: 1, 
+            explanation: "Trang 45 đề cập: NIST - National Vulnerability Database (http://nvd.nist.gov)."
+        },
+        { 
+            q: "Trang web 'US-CERT' là viết tắt của tổ chức nào?", 
+            options: ["United States Computer Emergency Readiness Team", "United States Cyber Electronic Response Team", "United States Center for Emergency Response", "United States Computer Education and Research Team"], 
+            correct: 0, 
+            explanation: "Trang 45: US-CERT viết tắt của 'UNITED STATES COMPUTER EMERGENCY READINESS TEAM'."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    // Hàm mới: Check đáp án ngay khi click
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 45) msgEl.innerText = "Tuyệt vời! Bạn nắm rất vững kiến thức.";
+        else if (score >= 35) msgEl.innerText = "Khá tốt! Hãy ôn lại các câu sai.";
+        else msgEl.innerText = "Bạn cần ôn tập kỹ hơn nội dung trong slide.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

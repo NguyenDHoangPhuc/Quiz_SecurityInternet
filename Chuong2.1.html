@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 2.1 (Footprinting)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 2.1: Thăm dò hệ thống (Footprinting)</h1>
+        <p class="subtitle">Trắc nghiệm tương tác - ĐH Công nghệ Thông tin (UIT)</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/42</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/42
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu câu hỏi được biên soạn từ file "Chương 2.1 - Thăm dò và quét hệ thống mạng.pdf"
+    const quizData = [
+        { 
+            q: "Footprinting (Thăm dò) là quá trình gì trong hoạt động tấn công mạng?", 
+            options: ["Tấn công từ chối dịch vụ để làm tê liệt hệ thống", "Thu thập thông tin cơ bản về mục tiêu và mạng lưới của họ trước khi tấn công", "Xâm nhập vào hệ thống và cài đặt mã độc", "Xóa dấu vết sau khi tấn công"], 
+            correct: 1, 
+            explanation: "Theo slide 4, Footprinting là quá trình thu thập thông tin cơ bản về mục tiêu và mạng lưới (Collect basic information about the target and its network) và được thực hiện trước khi tấn công."
+        },
+        { 
+            q: "Mục đích chính của việc thăm dò hệ thống là gì?", 
+            options: ["Tìm ra các lỗ hổng (vulnerabilities) và mã khai thác (exploits) để thực hiện tấn công", "Tăng tốc độ mạng của nạn nhân", "Vá lỗi hệ điều hành cho nạn nhân", "Mã hóa dữ liệu của nạn nhân"], 
+            correct: 0, 
+            explanation: "Theo slide 4, mục đích là 'Find vulnerabilities and exploits for launching attacks'."
+        },
+        { 
+            q: "Đâu KHÔNG phải là một mối đe dọa (threat) trực tiếp từ việc bị thăm dò thông tin được liệt kê trong tài liệu?", 
+            options: ["Social Engineering (Tấn công phi kỹ thuật)", "Corporate Espionage (Gián điệp doanh nghiệp)", "System and Network Attacks", "Hardware Failure (Hỏng phần cứng ngẫu nhiên)"], 
+            correct: 3, 
+            explanation: "Slide 6 liệt kê các mối đe dọa gồm: Business loss, Corporate espionage, Privacy loss, Social engineering, System and network attacks, Information leakage. Hỏng phần cứng không được đề cập."
+        },
+        { 
+            q: "Công cụ tìm kiếm nào được sử dụng chuyên biệt để tìm kiếm các thiết bị kết nối Internet như Router, Server, Webcam, IoT?", 
+            options: ["Google", "Bing", "SHODAN", "Yahoo"], 
+            correct: 2, 
+            explanation: "Slide 9 giới thiệu SHODAN là 'Computer Search Engine' cho phép tìm các thiết bị cụ thể (routers, servers, webcams...) bằng các bộ lọc khác nhau."
+        },
+        { 
+            q: "Để xem lại phiên bản cũ của một trang web đã bị xóa hoặc thay đổi nội dung, hacker thường sử dụng công cụ nào?", 
+            options: ["Google Earth", "Archive.org (Wayback Machine)", "Wireshark", "Nmap"], 
+            correct: 1, 
+            explanation: "Slide 42 giới thiệu 'Internet Archive Wayback Machine allows you to visit archived versions of Web sites'."
+        },
+        { 
+            q: "Trang web nào sau đây cung cấp thông tin tài chính, giá cổ phiếu và hồ sơ công ty đối thủ?", 
+            options: ["Google Finance và Yahoo! Finance", "Google Earth", "Facebook", "Youtube"], 
+            correct: 0, 
+            explanation: "Slide 16 đề cập đến việc thu thập thông tin từ Financial Services như Google Finance và Yahoo! Finance."
+        },
+        { 
+            q: "Thông tin nào sau đây thường KHÔNG thu thập được từ các trang mạng xã hội (Social Networking Sites) như Facebook, LinkedIn?", 
+            options: ["Thông tin liên hệ và vị trí", "Danh sách bạn bè và người thân", "Mã nguồn (Source code) của phần mềm quản lý nội bộ", "Sở thích cá nhân và hoạt động thường ngày"], 
+            correct: 2, 
+            explanation: "Slide 15 liệt kê các thông tin lấy được từ mạng xã hội gồm: Contact info, Friends list, Interests, Activities... Mã nguồn nội bộ thường không có trên mạng xã hội."
+        },
+        { 
+            q: "Cơ sở dữ liệu WHOIS được duy trì bởi các tổ chức nào?", 
+            options: ["Các nhà cung cấp dịch vụ Internet (ISP)", "Regional Internet Registries (RIRs)", "Chính phủ Mỹ", "Google"], 
+            correct: 1, 
+            explanation: "Slide 19 ghi rõ: 'WHOIS databases are maintained by Regional Internet Registries'."
+        },
+        { 
+            q: "Bản ghi DNS loại 'A' cung cấp thông tin gì?", 
+            options: ["Trỏ đến địa chỉ IP của host (Points to a host's IP address)", "Trỏ đến máy chủ thư điện tử (Mail server)", "Trỏ đến máy chủ tên miền (Name server)", "Cung cấp thông tin người chịu trách nhiệm"], 
+            correct: 0, 
+            explanation: "Theo Slide 25: 'A - Points to a host's IP address'."
+        },
+        { 
+            q: "Bản ghi DNS nào xác định máy chủ chịu trách nhiệm xử lý email cho tên miền?", 
+            options: ["NS", "SOA", "MX", "PTR"], 
+            correct: 2, 
+            explanation: "Theo Slide 25: 'MX - Points to domain's mail server'."
+        },
+        { 
+            q: "Bản ghi DNS 'PTR' có chức năng gì?", 
+            options: ["Ánh xạ từ Hostname sang IP", "Ánh xạ từ IP sang Hostname", "Xác định bí danh (alias) của host", "Chứa thông tin cấu hình CPU"], 
+            correct: 1, 
+            explanation: "Theo Slide 25: 'PTR - Maps IP address to a hostname'."
+        },
+        { 
+            q: "Bản ghi DNS 'NS' dùng để làm gì?", 
+            options: ["Trỏ đến máy chủ tên miền (Points to host's name server)", "Trỏ đến IP", "Chỉ định mail server", "Xác định người quản trị"], 
+            correct: 0, 
+            explanation: "Theo Slide 25: 'NS - Points to host's name server'."
+        },
+        { 
+            q: "Bản ghi DNS 'CNAME' là viết tắt của gì và dùng để làm gì?", 
+            options: ["Canonical Name - Cho phép tạo bí danh (alias) tới một host", "Common Name - Định danh chung", "Computer Name - Tên máy tính", "Control Name - Tên điều khiển"], 
+            correct: 0, 
+            explanation: "Theo Slide 25: 'CNAME - Canonical naming allows aliases to a host'."
+        },
+        { 
+            q: "Bản ghi DNS 'SOA' có ý nghĩa gì?", 
+            options: ["Start of Authority - Chỉ định thẩm quyền cho domain", "Service on Air - Dịch vụ đang chạy", "Source of Address - Nguồn địa chỉ", "System of Administration - Hệ thống quản trị"], 
+            correct: 0, 
+            explanation: "Theo Slide 25: 'SOA - Indicate authority for domain'."
+        },
+        { 
+            q: "Bản ghi DNS 'HINFO' chứa thông tin gì?", 
+            options: ["Thông tin về Host bao gồm loại CPU và hệ điều hành (OS)", "Thông tin lịch sử tên miền", "Thông tin về hacker", "Thông tin trợ giúp (Help Info)"], 
+            correct: 0, 
+            explanation: "Theo Slide 25: 'HINFO - Host information record includes CPU type and OS'."
+        },
+        { 
+            q: "Các chương trình Traceroute hoạt động dựa trên giao thức nào và trường thông tin nào trong header?", 
+            options: ["Giao thức TCP và trường Sequence Number", "Giao thức UDP và trường Port Number", "Giao thức ICMP và trường TTL (Time To Live)", "Giao thức HTTP và trường Host"], 
+            correct: 2, 
+            explanation: "Slide 30: 'Traceroute programs work on the concept of ICMP protocol and use the TTL field in the header'."
+        },
+        { 
+            q: "Mục đích chính của việc phân tích Traceroute trong Footprinting là gì?", 
+            options: ["Bẻ khóa mật khẩu Wifi", "Trích xuất thông tin về cấu trúc mạng (topology), router tin cậy và vị trí tường lửa", "Đọc nội dung email của nạn nhân", "Thay đổi giao diện trang web"], 
+            correct: 1, 
+            explanation: "Slide 31: 'Attackers conduct traceroute to extract information about: network topology, trusted routers, and firewall locations'."
+        },
+        { 
+            q: "Đâu là một công cụ hỗ trợ Traceroute có giao diện đồ họa hoặc 3D được nhắc đến trong slide?", 
+            options: ["VisualRoute Trace", "Notepad", "Cmd", "Calculator"], 
+            correct: 0, 
+            explanation: "Slide 35 liệt kê 'VisualRoute Trace' và '3d Visual Trace Route' là các công cụ Traceroute."
+        },
+        { 
+            q: "Kỹ thuật 'Mirroring Entire Website' (Sao chép toàn bộ website) giúp hacker làm gì?", 
+            options: ["Tải toàn bộ website về máy cá nhân để phân tích offline cấu trúc thư mục, file HTML, ảnh...", "Đánh sập trang web ngay lập tức", "Thay đổi nội dung trang web gốc", "Gửi email spam từ trang web đó"], 
+            correct: 0, 
+            explanation: "Slide 38: 'allows you to download a website to a local directory, building recursively all directories, HTML, images...'."
+        },
+        { 
+            q: "Công cụ nào sau đây dùng để sao chép (Mirror) website?", 
+            options: ["HTTrack Web Site Copier", "Wireshark", "Nmap", "Maltego"], 
+            correct: 0, 
+            explanation: "Slide 39 và 40 giới thiệu HTTrack, Wget, BlackWidow là các công cụ Mirroring."
+        },
+        { 
+            q: "Các công cụ như Burp Suite, Zaproxy, Firebug giúp hacker xem thông tin gì từ website?", 
+            options: ["Xem mật khẩu người dùng", "Xem HTTP Headers (chứa thông tin Web server, phiên bản, Last-Modified...)", "Xem webcam của admin", "Xem mã nguồn backend PHP/Java"], 
+            correct: 1, 
+            explanation: "Slide 37: 'Use Burp Suite... to view headers that provide: Connection status, content-type, Last-Modified, X-Powered-By, Web server in use...'."
+        },
+        { 
+            q: "Email Tracking (Theo dõi email) cho phép kẻ tấn công biết được điều gì?", 
+            options: ["Mật khẩu email của người nhận", "Khi nào email được mở, thời gian đọc, vị trí GPS và địa chỉ IP của người nhận", "Nội dung các email khác trong hộp thư đến", "Danh sách bạn bè của người nhận"], 
+            correct: 1, 
+            explanation: "Slide 46 liệt kê các thông tin thu được: 'When the email was received and read', 'GPS location and map', 'Time spent on reading', 'IP address'."
+        },
+        { 
+            q: "Thông tin quan trọng nào có thể tìm thấy trong 'Email Header'?", 
+            options: ["Sender's IP address (Địa chỉ IP người gửi) và Mail server", "Lịch sử duyệt web của người gửi", "Mật khẩu máy tính người gửi", "Số điện thoại cá nhân người gửi"], 
+            correct: 0, 
+            explanation: "Slide 45 phân tích Email Header cho thấy 'Sender's mail server', 'Sender's IP address'."
+        },
+        { 
+            q: "Google Hacking là thuật ngữ chỉ điều gì?", 
+            options: ["Tấn công vào máy chủ của Google", "Nghệ thuật tạo ra các truy vấn tìm kiếm phức tạp (complex search engine queries) để tìm thông tin nhạy cảm", "Làm việc tại Google", "Sử dụng Google Maps để tìm đường"], 
+            correct: 1, 
+            explanation: "Slide 49: 'Google hacking is a term that refers to the art of creating complex search engine queries'."
+        },
+        { 
+            q: "Toán tử tìm kiếm nâng cao nào của Google giới hạn kết quả chỉ trong một tên miền cụ thể?", 
+            options: ["[link:]", "[info:]", "[site:]", "[cache:]"], 
+            correct: 2, 
+            explanation: "Slide 51: '[site:] ...Google restricts the results to those websites in the given domain'."
+        },
+        { 
+            q: "Toán tử `intitle:` dùng để làm gì?", 
+            options: ["Tìm các trang có chứa từ khóa trong tiêu đề (title)", "Tìm các trang có chứa từ khóa trong URL", "Tìm các trang có liên kết đến trang chỉ định", "Tìm bản lưu cache của trang web"], 
+            correct: 0, 
+            explanation: "Slide 51: '[intitle:] ...restricts the results to documents containing that word in the title'."
+        },
+        { 
+            q: "Toán tử `allintitle:` trong Google khác `intitle:` ở chỗ nào?", 
+            options: ["`allintitle:` tìm trang có tất cả các từ khóa trong tiêu đề, `intitle:` chỉ cần chứa từ khóa đó", "`allintitle:` tìm trong URL, `intitle:` tìm trong tiêu đề", "Hai toán tử này giống hệt nhau", "`allintitle:` không tồn tại"], 
+            correct: 0, 
+            explanation: "Slide 51: '[allintitle:] ...restricts the results to those with all of the query words in the title'."
+        },
+        { 
+            q: "Toán tử `link:` dùng để làm gì?", 
+            options: ["Liệt kê các trang web có liên kết đến trang web được chỉ định", "Tìm kiếm trong cache", "Tìm kiếm thông tin admin", "Tìm kiếm file PDF"], 
+            correct: 0, 
+            explanation: "Slide 51: '[link:] Lists web pages that have links to the specified web page'."
+        },
+        { 
+            q: "Truy vấn `intitle:intranet inurl:intranet +intext:\"human resources\"` thường được dùng để tìm gì?", 
+            options: ["Tìm các video giải trí", "Tìm các tài nguyên nội bộ, danh sách nhân viên hoặc thông tin nhạy cảm của công ty", "Tìm phần mềm diệt virus", "Tìm sách hướng dẫn sử dụng Google"], 
+            correct: 1, 
+            explanation: "Slide 52 ví dụ truy vấn này giúp 'access a company's private network... employee listings and other sensitive information'."
+        },
+        { 
+            q: "GHDB là viết tắt của cơ sở dữ liệu nào hỗ trợ việc tìm kiếm lỗ hổng bằng Google?", 
+            options: ["Global Hacking Data Bank", "Google Hacking Database", "General Host Database", "Green Hat Database"], 
+            correct: 1, 
+            explanation: "Trong ngữ cảnh Google Hacking, GHDB là Google Hacking Database (Slide 60 đề cập GHDB)."
+        },
+        { 
+            q: "Maltego là công cụ dùng để làm gì?", 
+            options: ["Tấn công DDoS", "Thu thập thông tin và vẽ sơ đồ mối quan hệ (Information Gathering)", "Bẻ khóa mật khẩu", "Quét virus"], 
+            correct: 1, 
+            explanation: "Slide 54 liệt kê Maltego trong phần 'Additional Footprinting Tools'. Maltego nổi tiếng với khả năng link analysis."
+        },
+        { 
+            q: "Một trong những biện pháp phòng chống (Countermeasures) việc bị lộ thông tin qua Footprinting là gì?", 
+            options: ["Đăng tất cả thông tin nhân viên lên website công ty", "Hạn chế nhân viên truy cập mạng xã hội từ mạng nội bộ và giáo dục về bảo mật", "Mở tất cả các cổng (port) trên tường lửa", "Sử dụng cấu hình mặc định cho Web server"], 
+            correct: 1, 
+            explanation: "Slide 56: 'Restrict the employees to access social networking sites...' và 'Educate employees...'."
+        },
+        { 
+            q: "Kỹ thuật 'Split DNS' giúp phòng chống điều gì?", 
+            options: ["Chống tấn công DDoS", "Ngăn chặn việc lộ thông tin cấu trúc mạng nội bộ bằng cách tách biệt DNS nội bộ và bên ngoài", "Tăng tốc độ truy cập web", "Mã hóa email"], 
+            correct: 1, 
+            explanation: "Slide 57: 'Set apart internal and external DNS or use split DNS...'."
+        },
+        { 
+            q: "Để ngăn chặn search engine lưu trữ thông tin nhạy cảm, quản trị viên nên làm gì?", 
+            options: ["Tắt máy chủ web", "Ngăn chặn search engines cache trang web (Prevent search engines from caching)", "Đặt mật khẩu đơn giản", "Tăng băng thông mạng"], 
+            correct: 1, 
+            explanation: "Slide 56: 'Prevent search engines from caching a web page...'."
+        },
+        { 
+            q: "Footprinting Pen Testing (Kiểm thử xâm nhập phần thăm dò) bao gồm bước đầu tiên quan trọng nào?", 
+            options: ["Thực hiện tấn công ngay lập tức", "Xin phép và xác định phạm vi đánh giá (Get proper authorization and define scope)", "Xóa log hệ thống", "Công bố lỗ hổng lên báo chí"], 
+            correct: 1, 
+            explanation: "Slide 59, bước đầu tiên trong quy trình là: 'Get proper authorization and define the scope of the assessment'."
+        },
+        { 
+            q: "Công cụ Web Data Extractor chủ yếu dùng để làm gì?", 
+            options: ["Tấn công SQL Injection", "Trích xuất dữ liệu liên hệ (email, phone, fax) từ Internet", "Quét cổng mạng", "Thay đổi giao diện web"], 
+            correct: 1, 
+            explanation: "Slide 11: 'Web Data Extractor extracts the targeted company's contact data (email, phone, fax) from the Internet'."
+        },
+        { 
+            q: "NetRange trong kết quả WHOIS cho biết điều gì?", 
+            options: ["Tên miền của trang web", "Dải địa chỉ IP mà tổ chức sở hữu hoặc quản lý", "Số điện thoại giám đốc", "Vị trí GPS chính xác"], 
+            correct: 1, 
+            explanation: "Slide 29 minh họa kết quả WHOIS với trường 'NetRange: 207.46.0.0 - 207.46.255.255', tức là dải IP."
+        },
+        { 
+            q: "Website Watcher là công cụ thuộc nhóm kỹ thuật nào?", 
+            options: ["DNS Footprinting", "Website Footprinting (Monitoring Web Updates)", "Email Footprinting", "Network Footprinting"], 
+            correct: 1, 
+            explanation: "Slide 44 có tiêu đề 'Website Footprinting - Monitoring Web Updates Using Website Watcher'."
+        },
+        { 
+            q: "Mục đích của việc sử dụng 'Archive.org' trong Website Footprinting là gì?", 
+            options: ["Xem thông tin hiện tại của website", "Xem các phiên bản cũ của website mà có thể chứa thông tin nhạy cảm đã bị xóa", "Tấn công vào cơ sở dữ liệu của website", "Tăng lượt truy cập cho website"], 
+            correct: 1, 
+            explanation: "Slide 42: 'allows you to visit archived versions of Web sites'. Thông tin cũ có thể tiết lộ cấu trúc hoặc dữ liệu nhạy cảm đã bị gỡ bỏ."
+        },
+        { 
+            q: "Bản ghi DNS 'SRV' dùng để làm gì?", 
+            options: ["Xác định vị trí các dịch vụ cụ thể (Service records)", "Xác định người chịu trách nhiệm", "Ánh xạ IP sang tên miền", "Chỉ định máy chủ mail"], 
+            correct: 0, 
+            explanation: "Slide 25: 'SRV - Service records'."
+        },
+        { 
+            q: "Một trong những cách phòng chống Footprinting là cấu hình Web server như thế nào?", 
+            options: ["Cho phép liệt kê thư mục (Enable directory listings)", "Vô hiệu hóa liệt kê thư mục (Disable directory listings)", "Hiển thị đầy đủ thông tin lỗi chi tiết", "Không đặt mật khẩu cho trang quản trị"], 
+            correct: 1, 
+            explanation: "Slide 57: 'Disable directory listings in the web servers'."
+        },
+        { 
+            q: "Công cụ nào sau đây được liệt kê là 'Google Hacking Tool'?", 
+            options: ["SiteDigger", "Calculator", "Notepad++", "WinZip"], 
+            correct: 0, 
+            explanation: "Slide 53 liệt kê: MetaGoofil, SiteDigger, Google Hacks... là Google Hacking Tools."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    // Hàm mới: Check đáp án ngay khi click
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 38) msgEl.innerText = "Tuyệt vời! Bạn nắm rất vững kiến thức chương này.";
+        else if (score >= 30) msgEl.innerText = "Khá tốt! Hãy ôn lại các câu sai.";
+        else msgEl.innerText = "Bạn cần ôn tập kỹ hơn nội dung trong slide.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Bảo mật Internet - Chương 4 (Full + PenTest)</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --explanation-bg: #e2e3e5;
+            --explanation-text: #383d41;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        h1 { color: var(--primary-color); margin: 0; font-size: 22px; }
+        p.subtitle { color: #666; margin-top: 5px; font-size: 14px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        .options-list { list-style: none; padding: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option-item:hover { background-color: #e2e6ea; border-color: #ced4da; }
+        
+        /* Trạng thái sau khi click */
+        .option-item.correct { border-color: var(--correct-color); background-color: #d4edda; color: #155724; }
+        .option-item.wrong { border-color: var(--wrong-color); background-color: #f8d7da; color: #721c24; }
+        .option-item.disabled { pointer-events: none; cursor: default; }
+
+        /* Khung giải thích */
+        .explanation-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .explanation-box.error-context {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .explanation-title { font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn-nav:disabled { background-color: #e2e6ea; color: #adb5bd; cursor: not-allowed; }
+        
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #004494; }
+
+        .result-section { text-align: center; display: none; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-controls { gap: 10px; }
+            .btn-nav { width: 48%; min-width: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Ôn tập Chương 4: Các phần mềm gây hại (Full)</h1>
+        <p class="subtitle">Bao gồm Virus, Trojan, Worm & Quy trình Kiểm thử hệ thống</p>
+    </header>
+
+    <div id="quiz-interface">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-header">
+            <span class="question-tag">Câu <span id="current-q">1</span>/70</span>
+            <span style="font-size: 14px; color: #666;" id="score-live">Đúng: 0</span>
+        </div>
+
+        <div class="question-text" id="question-text">Loading...</div>
+        
+        <ul class="options-list" id="options-list">
+            </ul>
+
+        <div id="explanation-area" class="explanation-box">
+            <span id="explanation-title" class="explanation-title">GIẢI THÍCH</span>
+            <span id="explanation-text">Nội dung giải thích...</span>
+        </div>
+
+        <div class="footer-controls">
+            <button id="prev-btn" class="btn-nav" onclick="changeQuestion(-1)">❮ Câu trước</button>
+            <button id="next-btn" class="btn-nav" onclick="changeQuestion(1)">Câu sau ❯</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+             <button onclick="finishQuiz()" style="background: transparent; color: #666; border: 1px solid #ccc; font-size: 12px; padding: 5px 10px; min-width: auto;">Kết thúc bài thi sớm</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-section">
+        <h2>Kết quả bài làm</h2>
+        <div class="score-circle">
+            <span id="final-score">0</span>/70
+        </div>
+        <p class="result-msg" id="result-msg"></p>
+        <div style="margin-top: 30px;">
+            <button onclick="location.reload()" style="background-color: var(--primary-color); color: white; padding: 12px 30px;">Làm lại đề mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 70 câu hỏi cho Chương 4 (Đã bổ sung phần Kiểm thử hệ thống)
+    const quizData = [
+        // --- PHẦN 1: KHÁI NIỆM & CÁCH THỨC XÂM NHẬP ---
+        { 
+            q: "Malware (Phần mềm độc hại) là gì?", 
+            options: ["Phần mềm giúp tăng tốc máy tính", "Phần mềm được thiết kế để gây hại hoặc vô hiệu hóa hệ thống máy tính vì mục đích trộm cắp hoặc gian lận", "Phần mềm diệt virus", "Phần mềm quản lý mạng"], 
+            correct: 1, 
+            explanation: "Slide 4: Malware is a malicious software that damages or disables computer systems... for the purpose of theft or fraud."
+        },
+        { 
+            q: "Đâu KHÔNG phải là một cách thức Malware xâm nhập vào hệ thống?", 
+            options: ["Instant Messenger applications", "File sharing (NetBIOS)", "Tải phần mềm từ trang web chính hãng có chữ ký số hợp lệ", "Email attachments"], 
+            correct: 2, 
+            explanation: "Slide 5: Liệt kê các cách xâm nhập như IM, Email bugs, IRC, Removable devices, Untrusted sites... Phần mềm chính hãng (Legitimate) thường an toàn."
+        },
+        { 
+            q: "Kỹ thuật 'Blackhat SEO' giúp malware lây lan như thế nào?", 
+            options: ["Gửi email spam", "Xếp hạng các trang web chứa mã độc lên vị trí cao trong kết quả tìm kiếm", "Tấn công từ chối dịch vụ", "Mã hóa dữ liệu"], 
+            correct: 1, 
+            explanation: "Slide 6: Blackhat Search Engine Optimization (SEO) - Ranking malware pages highly in search results."
+        },
+        { 
+            q: "Malvertising là gì?", 
+            options: ["Quảng cáo sản phẩm phần mềm", "Nhúng mã độc vào các mạng quảng cáo để hiển thị trên các trang web hợp pháp", "Spam tin nhắn quảng cáo", "Tấn công vào máy chủ quảng cáo"], 
+            correct: 1, 
+            explanation: "Slide 6: Malvertising - Embedding malware in ad-networks that display across hundreds of legitimate sites."
+        },
+        { 
+            q: "Drive-by Download là hình thức tấn công nào?", 
+            options: ["Tải file thủ công", "Tự động tải phần mềm độc hại khi người dùng truy cập trang web mà không cần sự tương tác của họ", "Gửi file qua USB", "Tải file từ email"], 
+            correct: 1, 
+            explanation: "Slide 6: Drive-by Downloads exploit flaws in browser software to install malware just by visiting a web page."
+        },
+
+        // --- PHẦN 2: TROJAN ---
+        { 
+            q: "Định nghĩa chính xác về Trojan Horse?", 
+            options: ["Một chương trình tự nhân bản", "Một chương trình trông có vẻ vô hại nhưng thực chất chứa mã độc hại, không tự nhân bản", "Một loại sâu máy tính", "Một loại virus boot sector"], 
+            correct: 1, 
+            explanation: "Slide 8: A Trojan is a program that appears harmless, but actually performs malicious functions... do not propagate (không tự nhân bản)."
+        },
+        { 
+            q: "Overt Channel (Kênh công khai) là gì?", 
+            options: ["Kênh truyền thông tin hợp pháp và được phép", "Kênh truyền thông tin bí mật", "Kênh truyền mã hóa", "Kênh truyền qua USB"], 
+            correct: 0, 
+            explanation: "Slide 9: Overt channels are legitimate communication channels used by programs."
+        },
+        { 
+            q: "Covert Channel (Kênh bí mật) được Trojan sử dụng để làm gì?", 
+            options: ["Gửi dữ liệu công khai", "Truyền dữ liệu vi phạm chính sách bảo mật hệ thống (ví dụ: giấu dữ liệu trong header gói tin)", "Tăng tốc độ mạng", "Mã hóa file"], 
+            correct: 1, 
+            explanation: "Slide 9: Covert channels are used to transport data in a way that violates the system's security policy."
+        },
+        { 
+            q: "Wrapper (Bộ gói) có chức năng gì trong việc tạo Trojan?", 
+            options: ["Mã hóa Trojan", "Gắn (Bind) file thực thi Trojan vào một file hợp lệ (ví dụ: game, ứng dụng) để đánh lừa người dùng", "Quét virus", "Tạo cửa hậu"], 
+            correct: 1, 
+            explanation: "Slide 10: Wrappers binds a Trojan executable with genuine looking .EXE application (game, office app)."
+        },
+        { 
+            q: "Crypter dùng để làm gì?", 
+            options: ["Mã hóa dữ liệu người dùng để tống tiền", "Mã hóa/Che giấu mã nguồn của Trojan để tránh bị phần mềm diệt virus phát hiện", "Giải mã file", "Tạo mật khẩu"], 
+            correct: 1, 
+            explanation: "Slide 10: Crypter allows users to hide viruses, keyloggers, or tools from antivirus... protecting the code."
+        },
+        { 
+            q: "Remote Access Trojan (RAT) cho phép kẻ tấn công làm gì?", 
+            options: ["Chỉ xem màn hình", "Kiểm soát toàn quyền (Full control) máy tính nạn nhân từ xa", "Chỉ gửi email", "Chỉ xóa file"], 
+            correct: 1, 
+            explanation: "Slide 12: Remote Access Trojans provide attackers with full control over the victim's system."
+        },
+        { 
+            q: "Data Sending Trojan được thiết kế để làm gì?", 
+            options: ["Gửi thư rác", "Ăn cắp và gửi các thông tin nhạy cảm (mật khẩu, file, credit card) về cho hacker", "Xóa dữ liệu", "Tấn công DDoS"], 
+            correct: 1, 
+            explanation: "Slide 13: Data Sending Trojans... capture information (passwords, cookies, keylogs) and send it to the hacker."
+        },
+        { 
+            q: "Destructive Trojan (Trojan phá hoại) có chức năng chính là gì?", 
+            options: ["Ăn cắp mật khẩu", "Xóa file, làm hỏng hệ điều hành hoặc định dạng ổ đĩa", "Biến máy thành Proxy", "Mở cổng FTP"], 
+            correct: 1, 
+            explanation: "Slide 14: Destructive Trojans delete files, corrupt the OS, or format the drive."
+        },
+        { 
+            q: "Proxy Server Trojan biến máy nạn nhân thành gì?", 
+            options: ["Máy chủ web", "Máy trạm (Slave) để hacker dùng làm bàn đạp tấn công mục tiêu khác (ẩn danh tính hacker)", "Máy chủ DNS", "Máy quét virus"], 
+            correct: 1, 
+            explanation: "Slide 15: Proxy Server Trojans turn the victim's computer into a proxy server... attacker uses it to launch attacks anonymously."
+        },
+        { 
+            q: "FTP Trojan thường làm gì trên máy nạn nhân?", 
+            options: ["Mở cổng 21 và biến máy nạn nhân thành FTP Server", "Tải file từ FTP", "Tấn công FTP Server", "Xóa phần mềm FTP"], 
+            correct: 0, 
+            explanation: "Slide 16: FTP Trojans install an FTP server... open port 21... allow attacker to upload/download files."
+        },
+        { 
+            q: "Security Software Disabler Trojan nhắm vào mục tiêu nào?", 
+            options: ["Trình duyệt web", "Phần mềm diệt virus (Antivirus) và Tường lửa (Firewall)", "Microsoft Office", "Trình nghe nhạc"], 
+            correct: 1, 
+            explanation: "Slide 17: Security Software Disabler Trojan stops antivirus programs or firewalls."
+        },
+        { 
+            q: "VNC Trojan lợi dụng giao thức nào?", 
+            options: ["FTP", "VNC (Virtual Network Computing) để điều khiển từ xa", "HTTP", "SMTP"], 
+            correct: 1, 
+            explanation: "Slide 19: VNC Trojan uses VNC (Virtual Network Computing) server... for remote control."
+        },
+        { 
+            q: "Command Shell Trojan (ví dụ: Netcat) cung cấp cho hacker cái gì?", 
+            options: ["Giao diện đồ họa", "Quyền truy cập dòng lệnh (Command line) từ xa", "Mật khẩu admin", "File hệ thống"], 
+            correct: 1, 
+            explanation: "Slide 20: Command Shell Trojans give remote control via a command line shell."
+        },
+        { 
+            q: "Cổng mặc định của Trojan 'Back Orifice' là gì (theo kiến thức phổ biến trong CEH)?", 
+            options: ["80", "31337", "12345", "21"], 
+            correct: 1, 
+            explanation: "Mặc dù slide không liệt kê port cụ thể, nhưng Back Orifice và 31337 là kiến thức kinh điển về Trojan."
+        },
+        { 
+            q: "Làm thế nào để phát hiện Trojan bằng lệnh `netstat`?", 
+            options: ["Kiểm tra các kết nối mạng đáng ngờ và các cổng lạ đang mở", "Kiểm tra dung lượng ổ cứng", "Kiểm tra nhiệt độ CPU", "Kiểm tra driver"], 
+            correct: 0, 
+            explanation: "Slide 26: Scan for suspicious open ports... using tools like Netstat."
+        },
+        { 
+            q: "Vị trí nào trong Windows Registry thường bị Trojan sử dụng để tự khởi động?", 
+            options: ["HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "HKEY_USERS\\.DEFAULT", "HKEY_CLASSES_ROOT", "HKEY_CURRENT_CONFIG"], 
+            correct: 0, 
+            explanation: "Slide 26: Scan for suspicious registry entries (Run, RunServices...)."
+        },
+        { 
+            q: "Công cụ nào giúp theo dõi các thay đổi trong Registry và File system?", 
+            options: ["Notepad", "SysAnalyzer / RegShot / Tripwire", "Calculator", "Paint"], 
+            correct: 1, 
+            explanation: "Slide 26, 27: Scan for suspicious device drivers/services... Check startup."
+        },
+
+        // --- PHẦN 3: VIRUS ---
+        { 
+            q: "Định nghĩa Virus máy tính?", 
+            options: ["Chương trình tự nhân bản bằng cách lây nhiễm vào các file hoặc hệ thống khác (cần vật chủ)", "Chương trình độc lập tự chạy", "Phần cứng máy tính", "Lỗi phần mềm"], 
+            correct: 0, 
+            explanation: "Slide 29: Virus is a self-replicating program that produces its own copy by attaching itself to another program."
+        },
+        { 
+            q: "Đâu là sự khác biệt chính giữa Virus và Worm?", 
+            options: ["Virus cần vật chủ (host) để lây lan, Worm là chương trình độc lập tự lây lan qua mạng", "Virus gây hại, Worm vô hại", "Virus lây qua USB, Worm lây qua Email", "Không có sự khác biệt"], 
+            correct: 0, 
+            explanation: "Slide 51: Worms are standalone programs... replicate without a host program."
+        },
+        { 
+            q: "Giai đoạn nào của Virus là khi nó được kích hoạt bởi một điều kiện nhất định (ngày tháng, sự kiện)?", 
+            options: ["Design", "Replication", "Launch (Trigger)", "Detection"], 
+            correct: 2, 
+            explanation: "Slide 31: Launch - Activated by the user performing certain actions (hoặc điều kiện)."
+        },
+        { 
+            q: "System Virus hay Boot Sector Virus tấn công vào đâu?", 
+            options: ["File văn bản", "Master Boot Record (MBR) hoặc DOS Boot Sector", "RAM", "BIOS"], 
+            correct: 1, 
+            explanation: "Slide 33: System or Boot Sector Virus moves MBR... copies itself to original MBR location."
+        },
+        { 
+            q: "File Virus thường lây nhiễm vào các loại file nào?", 
+            options: ["File ảnh (.jpg)", "File thực thi (.exe, .com, .vbs)", "File text (.txt)", "File nhạc (.mp3)"], 
+            correct: 1, 
+            explanation: "Slide 34: File Virus infects executable files (.exe, .com, .sys...)."
+        },
+        { 
+            q: "Multipartite Virus (Virus đa phần) là gì?", 
+            options: ["Virus chỉ lây file", "Virus lây nhiễm cả Boot Sector và File thực thi", "Virus có nhiều màu", "Virus mã hóa"], 
+            correct: 1, 
+            explanation: "Slide 35: Multipartite Virus infects the system's boot sector and executable files at the same time."
+        },
+        { 
+            q: "Macro Virus thường lây nhiễm vào đâu?", 
+            options: ["File hệ thống Windows", "Các tệp văn phòng (Microsoft Word, Excel) có sử dụng ngôn ngữ lập trình macro (VBA)", "File nhạc", "File ảnh"], 
+            correct: 1, 
+            explanation: "Slide 36: Macro Viruses infect files created by Microsoft Word or Excel (VBA)."
+        },
+        { 
+            q: "Cluster Virus hoạt động như thế nào?", 
+            options: ["Thay đổi nội dung file", "Sửa đổi các mục trong bảng thư mục (Directory table) để trỏ đến mã virus thay vì file thực, không thay đổi kích thước file", "Mã hóa ổ cứng", "Xóa file"], 
+            correct: 1, 
+            explanation: "Slide 37: Cluster Viruses modify directory table entries... user runs virus instead of actual program."
+        },
+        { 
+            q: "Stealth Virus (Virus tàng hình) làm gì để tránh bị phát hiện?", 
+            options: ["Nó xóa phần mềm diệt virus", "Nó can thiệp vào các yêu cầu hệ thống (intercepts calls) để trả về thông tin giả mạo (ví dụ: kích thước file gốc) khi antivirus quét", "Nó chạy ở chế độ Safe Mode", "Nó tắt màn hình"], 
+            correct: 1, 
+            explanation: "Slide 38: Stealth Viruses hide themselves... intercept requests... outputting false data."
+        },
+        { 
+            q: "Encryption Virus sử dụng kỹ thuật gì?", 
+            options: ["Mã hóa chính phần thân của nó (virus body) bằng một khóa để tránh bị phát hiện chữ ký (signature)", "Mã hóa dữ liệu người dùng", "Mã hóa đường truyền", "Mã hóa email"], 
+            correct: 0, 
+            explanation: "Slide 39: Encryption Viruses use simple encryption to encipher the code... difficult for AV to detect."
+        },
+        { 
+            q: "Polymorphic Virus (Virus đa hình) khác Encryption Virus ở điểm nào?", 
+            options: ["Nó không mã hóa", "Nó sử dụng một thuật toán mã hóa khác nhau cho mỗi lần lây nhiễm (biến đổi signature)", "Nó chỉ lây qua USB", "Nó dễ bị phát hiện hơn"], 
+            correct: 1, 
+            explanation: "Slide 41: Polymorphic code allows the virus to mutate... encryption routine differs from infection to infection."
+        },
+        { 
+            q: "Metamorphic Virus (Virus siêu hình) nguy hiểm hơn Polymorphic Virus vì sao?", 
+            options: ["Nó viết lại mã nguồn của chính nó (Rewrites its own code) mỗi lần lây nhiễm, thay đổi hoàn toàn cấu trúc", "Nó mã hóa mạnh hơn", "Nó lây lan nhanh hơn", "Nó xóa BIOS"], 
+            correct: 0, 
+            explanation: "Slide 42: Metamorphic Viruses rewrite themselves completely each time... changing logic and structure."
+        },
+        { 
+            q: "Cavity Virus (hay Spacefiller Virus) lây nhiễm như thế nào?", 
+            options: ["Ghi đè lên toàn bộ file", "Ghi đè vào các vùng trống (empty sections) trong file để không làm thay đổi kích thước file", "Tạo file mới", "Xóa file cũ"], 
+            correct: 1, 
+            explanation: "Slide 43: Cavity Viruses overwrite empty sections of host file... preserving file size."
+        },
+        { 
+            q: "Sparse Infector Virus có cơ chế gì đặc biệt?", 
+            options: ["Lây nhiễm mọi lúc", "Chỉ lây nhiễm thỉnh thoảng (occasionally) hoặc theo điều kiện để tránh bị phát hiện", "Lây nhiễm rất nhanh", "Không gây hại"], 
+            correct: 1, 
+            explanation: "Slide 44: Sparse Infector infects only occasionally... (e.g., every 10th execution) to minimize detection."
+        },
+        { 
+            q: "Logic Bomb là gì?", 
+            options: ["Một thiết bị nổ", "Một đoạn mã được chèn vào phần mềm, kích hoạt khi gặp điều kiện xác định (ngày giờ, sự kiện) để gây hại", "Một loại sâu máy tính", "Một lỗi phần mềm ngẫu nhiên"], 
+            correct: 1, 
+            explanation: "Slide 46: Logic Bomb is triggered by a specific event (e.g., Friday the 13th)."
+        },
+        { 
+            q: "Virus Hoax là gì?", 
+            options: ["Virus thật sự nguy hiểm", "Tin nhắn giả mạo cảnh báo về một loại virus không có thực, gây hoang mang và lãng phí thời gian", "Phần mềm diệt virus", "Trojan"], 
+            correct: 1, 
+            explanation: "Slide 47: Virus Hoaxes are false alarms... cause panic."
+        },
+        { 
+            q: "Fake Antivirus (Phần mềm diệt virus giả mạo) là gì?", 
+            options: ["Phần mềm diệt virus miễn phí tốt nhất", "Phần mềm độc hại giả danh là phần mềm bảo mật, báo cáo sai về virus để lừa người dùng trả tiền", "Bản cập nhật Windows", "Tường lửa"], 
+            correct: 1, 
+            explanation: "Slide 48: Fake Antivirus mimics legit security software... tricks users."
+        },
+
+        // --- PHẦN 4: SÂU MÁY TÍNH (WORM) ---
+        { 
+            q: "Worm (Sâu máy tính) lây lan chủ yếu qua đâu?", 
+            options: ["Sự di chuyển của người dùng", "Tự động quét và khai thác lỗ hổng mạng để lây sang máy khác", "Chỉ qua đĩa mềm", "Chỉ qua Bluetooth"], 
+            correct: 1, 
+            explanation: "Slide 51: Worms replicate... spread via networks."
+        },
+        { 
+            q: "Virus và Worm khác nhau cơ bản về sự phụ thuộc vào vật chủ như thế nào?", 
+            options: ["Virus cần file vật chủ, Worm là chương trình độc lập", "Worm cần file vật chủ, Virus độc lập", "Cả hai đều cần vật chủ", "Cả hai đều độc lập"], 
+            correct: 0, 
+            explanation: "Slide 51: Virus: Attaches to host. Worm: Standalone."
+        },
+
+        // --- PHẦN 5: PHÂN TÍCH & PHÒNG CHỐNG ---
+        { 
+            q: "Sheep Dip Computer là gì trong phân tích Malware?", 
+            options: ["Máy tính dùng để chăn cừu", "Máy tính biệt lập (Isolated) dùng để kiểm tra file nghi ngờ virus trước khi đưa vào mạng lưới", "Máy chủ chứa virus", "Máy tính của hacker"], 
+            correct: 1, 
+            explanation: "Slide 52: Sheep dip computer is used for virus analysis... isolated from the network."
+        },
+        { 
+            q: "Malware Analysis có hai phương pháp chính là gì?", 
+            options: ["Static (Tĩnh) và Dynamic (Động)", "Online và Offline", "Manual và Auto", "Blackbox và Whitebox"], 
+            correct: 0, 
+            explanation: "Slide 53: Static Analysis (Code Analysis) và Dynamic Analysis (Behavioral Analysis)."
+        },
+        { 
+            q: "Static Analysis bao gồm hoạt động nào?", 
+            options: ["Chạy malware trong máy ảo", "Phân tích mã nguồn hoặc mã nhị phân mà không chạy chương trình", "Theo dõi kết nối mạng", "Theo dõi thay đổi registry"], 
+            correct: 1, 
+            explanation: "Slide 53: Static Analysis... inspecting the file without running it."
+        },
+        { 
+            q: "Dynamic Analysis bao gồm hoạt động nào?", 
+            options: ["Đọc mã nguồn", "Chạy malware trong môi trường an toàn (Sandbox) và giám sát hành vi của nó", "Kiểm tra chữ ký số", "Quét virus"], 
+            correct: 1, 
+            explanation: "Slide 53: Dynamic Analysis... executing the code in a secure environment."
+        },
+        { 
+            q: "Công cụ nào giúp liệt kê các cổng TCP/UDP đang mở và tiến trình tương ứng?", 
+            options: ["TCPView / CurrPorts", "Notepad", "Calculator", "Camera"], 
+            correct: 0, 
+            explanation: "Slide 54: TCPView/CurrPorts lists all open TCP/UDP endpoints."
+        },
+        { 
+            q: "Công cụ nào giúp kiểm tra các chương trình tự khởi động cùng Windows?", 
+            options: ["Autoruns / MsConfig", "Word", "Excel", "Photoshop"], 
+            correct: 0, 
+            explanation: "Slide 55: Autoruns... shows what programs are configured to run during system bootup."
+        },
+        { 
+            q: "HijackThis là công cụ dùng để làm gì?", 
+            options: ["Tấn công máy tính", "Quét và phát hiện các thiết lập trình duyệt/hệ thống bị thay đổi bởi malware", "Tải virus", "Mã hóa file"], 
+            correct: 1, 
+            explanation: "Slide 56: HijackThis... scans for settings changed by spyware/malware."
+        },
+        { 
+            q: "File Integrity Checker (như Tripwire) giúp phát hiện malware bằng cách nào?", 
+            options: ["Quét chữ ký virus", "So sánh giá trị băm (hash) của file hiện tại với giá trị băm gốc đã lưu để phát hiện sự thay đổi", "Chặn kết nối mạng", "Diệt virus"], 
+            correct: 1, 
+            explanation: "Slide 57: Check critical OS file modification... comparing hash values."
+        },
+        { 
+            q: "Ransomware là loại malware gì?", 
+            options: ["Ăn cắp mật khẩu", "Mã hóa dữ liệu của người dùng và đòi tiền chuộc để giải mã", "Hiển thị quảng cáo", "Biến máy thành zombie"], 
+            correct: 1, 
+            explanation: "Slide 4: Ransomware (listed in examples)."
+        },
+        { 
+            q: "Botnet là gì?", 
+            options: ["Một con robot", "Mạng lưới các máy tính bị nhiễm malware (Zombies) được điều khiển từ xa bởi hacker", "Mạng nội bộ", "Phần mềm chat"], 
+            correct: 1, 
+            explanation: "Slide 4: Botnet (listed in examples)."
+        },
+        { 
+            q: "Adware là gì?", 
+            options: ["Phần mềm quản trị", "Phần mềm tự động hiển thị hoặc tải xuống tài liệu quảng cáo (thường là không mong muốn)", "Phần mềm diệt virus", "Phần mềm chỉnh sửa ảnh"], 
+            correct: 1, 
+            explanation: "Slide 4: Adware (listed in examples)."
+        },
+        { 
+            q: "Worm có thể gây ra hậu quả gì cho hệ thống mạng?", 
+            options: ["Làm đầy băng thông mạng (Network congestion) do cơ chế tự nhân bản liên tục", "Làm hỏng bàn phím", "Làm hỏng màn hình", "Làm mất chuột"], 
+            correct: 0, 
+            explanation: "Hệ quả phổ biến của Worm (tắc nghẽn mạng)."
+        },
+        { 
+            q: "Dropper là gì?", 
+            options: ["Phần mềm giúp máy tính chạy nhanh", "Một chương trình được thiết kế để 'thả' (cài đặt) malware lên máy tính mục tiêu (thường ẩn trong file khác)", "Phần mềm xóa file rác", "Công cụ vẽ"], 
+            correct: 1, 
+            explanation: "Kiến thức liên quan đến cơ chế lây nhiễm (Wrapper/Dropper)."
+        },
+
+        // --- PHẦN 6: BỔ SUNG KIỂM THỬ HỆ THỐNG (Slide 58-59) ---
+        {
+            q: "Trong quy trình kiểm thử virus (Penetration Testing for Virus), bước đầu tiên khi phát hiện 'hành vi đáng ngờ' (suspicious activity) là gì?",
+            options: ["Quét virus ngay lập tức", "Cách ly hệ thống khỏi mạng (Isolate the system)", "Cài lại hệ điều hành", "Sao chép dữ liệu"],
+            correct: 1,
+            explanation: "Slide 58: Sơ đồ bắt đầu bằng 'Suspicious activity found?' -> Yes -> 'Isolate the system' để ngăn lây lan."
+        },
+        {
+            q: "Tại sao quy trình kiểm thử yêu cầu chạy phần mềm diệt virus ở chế độ 'Safe Mode'?",
+            options: ["Vì Safe Mode giao diện đẹp hơn", "Để ngăn malware tự động khởi động cùng hệ thống, giúp việc quét và xóa dễ dàng hơn", "Vì Safe Mode có tốc độ mạng nhanh hơn", "Vì Safe Mode không tốn pin"],
+            correct: 1,
+            explanation: "Slide 58: 'Run the Anti-virus in safe mode'. Ở Safe Mode, chỉ các driver cơ bản được tải, malware khó hoạt động."
+        },
+        {
+            q: "Nếu phần mềm diệt virus phát hiện mã độc, hành động được khuyến nghị trong quy trình là gì?",
+            options: ["Mở file lên xem", "Gửi email cho hacker", "Quarantine (Cách ly) hoặc Delete (Xóa) file bị nhiễm", "Đổi tên file"],
+            correct: 2,
+            explanation: "Slide 58: 'Set the Anti-virus to quarantine or delete infected files'."
+        },
+        {
+            q: "Nếu quét bằng phần mềm diệt virus hiện tại không thấy virus nhưng máy vẫn có dấu hiệu nghi ngờ, bước tiếp theo là gì?",
+            options: ["Kết luận máy an toàn", "Cài đặt một phần mềm diệt virus KHÁC (Install another Anti-virus) để quét lại", "Bán máy đi", "Tắt máy"],
+            correct: 1,
+            explanation: "Slide 59: Nếu 'Virus found? -> No' nhưng vẫn nghi ngờ -> 'Install another Anti-virus'."
+        },
+        {
+            q: "Trong trường hợp đã quét bằng nhiều phần mềm mà không tìm thấy virus, nhưng hệ thống vẫn hoạt động bất thường, giải pháp cuối cùng là gì?",
+            options: ["Tiếp tục sử dụng", "Format hệ thống và cài lại bản OS sạch (Format with a clean OS copy)", "Thay ổ cứng mới", "Gọi điện cho nhà sản xuất"],
+            correct: 1,
+            explanation: "Slide 59: 'If virus is not found, format the system with a clean operating system copy'."
+        },
+        {
+            q: "Mục đích của bước 'Document all the findings' (Ghi lại tất cả phát hiện) trong quy trình kiểm thử là gì?",
+            options: ["Để nộp báo cáo lấy điểm", "Giúp xác định hành động tiếp theo nếu virus được tìm thấy và làm cơ sở dữ liệu cho tương lai", "Để làm đầy ổ cứng", "Để gửi cho báo chí"],
+            correct: 1,
+            explanation: "Slide 59: 'Document all the findings... it helps in determining the next action'."
+        },
+        {
+            q: "Khi thực hiện kiểm thử virus, việc 'Cách ly hệ thống' (Isolate infected system) nhằm mục đích chính là gì?",
+            options: ["Để virus chết vì thiếu mạng", "Ngăn chặn sự lây lan (prevent further infection) sang các máy khác trong mạng", "Để máy chạy nhanh hơn", "Để bảo vệ hacker"],
+            correct: 1,
+            explanation: "Slide 58: 'isolate infected system from the network immediately to prevent further infection'."
+        },
+        {
+            q: "Lý do tại sao cần cài đặt một Antivirus KHÁC nếu cái đầu tiên không tìm thấy virus?",
+            options: ["Vì thích dùng nhiều phần mềm", "Vì các phần mềm diệt virus có cơ sở dữ liệu nhận diện khác nhau, cái này có thể tìm thấy cái kia bỏ sót (Cross-validation)", "Vì phần mềm thứ hai luôn tốt hơn", "Để làm chậm máy"],
+            correct: 1,
+            explanation: "Dựa trên logic của Slide 59: Việc quét lại bằng engine khác giúp tăng khả năng phát hiện (Cross-check)."
+        },
+        {
+            q: "Sau khi format và cài lại OS sạch, bước tiếp theo nên làm gì để đảm bảo an toàn?",
+            options: ["Không làm gì cả", "Cập nhật các bản vá bảo mật và cài đặt lại Antivirus ngay lập tức", "Tải game về chơi", "Tắt tường lửa"],
+            correct: 1,
+            explanation: "Quy trình bảo mật tiêu chuẩn sau khi cài lại OS (suy luận từ ngữ cảnh Security Patches ở các chương trước)."
+        },
+        {
+            q: "Công cụ 'Tripwire' được nhắc đến trong phần kiểm thử hệ thống dùng để làm gì?",
+            options: ["Quét virus", "Kiểm tra tính toàn vẹn của file (File Integrity Checking) để phát hiện sự thay đổi trái phép", "Tường lửa", "Phần mềm gián điệp"],
+            correct: 1,
+            explanation: "Slide 57: 'Check the critical OS file modification... using tools such as TRIPWIRE'."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    
+    // Lưu trữ trạng thái của từng câu hỏi
+    const quizState = new Array(quizData.length).fill(null).map(() => ({
+        selectedIndex: null,
+        isSubmitted: false
+    }));
+
+    const questionEl = document.getElementById("question-text");
+    const optionsListEl = document.getElementById("options-list");
+    const currentQEl = document.getElementById("current-q");
+    const scoreLiveEl = document.getElementById("score-live");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    
+    const explanationArea = document.getElementById("explanation-area");
+    const explanationTitle = document.getElementById("explanation-title");
+    const explanationText = document.getElementById("explanation-text");
+    const progressBar = document.getElementById("progress");
+
+    function loadQuestion() {
+        const currentData = quizData[currentQuestionIndex];
+        const currentState = quizState[currentQuestionIndex];
+
+        questionEl.innerText = currentData.q;
+        currentQEl.innerText = currentQuestionIndex + 1;
+        scoreLiveEl.innerText = `Đúng: ${score}`;
+        
+        const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        optionsListEl.innerHTML = "";
+        
+        // Ẩn giải thích nếu chưa trả lời
+        if (!currentState.isSubmitted) {
+            explanationArea.style.display = "none";
+        }
+
+        // Render options
+        currentData.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.classList.add("option-item");
+            li.innerText = ["A. ", "B. ", "C. ", "D. "][index] + option;
+            
+            // Xử lý hiển thị màu sắc nếu đã trả lời
+            if (currentState.isSubmitted) {
+                li.classList.add("disabled"); // Khóa click
+                if (index === currentData.correct) {
+                    li.classList.add("correct"); // Màu xanh
+                } else if (index === currentState.selectedIndex) {
+                    li.classList.add("wrong"); // Màu đỏ
+                }
+            } else {
+                // Nếu chưa trả lời thì gán sự kiện click để check ngay lập tức
+                li.onclick = () => checkAnswerImmediate(index, li);
+            }
+
+            optionsListEl.appendChild(li);
+        });
+
+        // Hiển thị giải thích nếu đã trả lời
+        if (currentState.isSubmitted) {
+            showExplanation(currentState.selectedIndex === currentData.correct, currentData);
+        }
+
+        // Xử lý nút điều hướng
+        prevBtn.disabled = (currentQuestionIndex === 0);
+        
+        if (currentQuestionIndex === quizData.length - 1) {
+            nextBtn.innerText = "Kết thúc";
+        } else {
+            nextBtn.innerText = "Câu sau ❯";
+        }
+    }
+
+    function checkAnswerImmediate(index, element) {
+        const currentState = quizState[currentQuestionIndex];
+        const currentData = quizData[currentQuestionIndex];
+
+        if (currentState.isSubmitted) return;
+
+        // Cập nhật trạng thái
+        currentState.selectedIndex = index;
+        currentState.isSubmitted = true;
+
+        // Tính điểm
+        const isCorrect = index === currentData.correct;
+        if (isCorrect) {
+            score++;
+        }
+
+        // Load lại giao diện để tô màu và hiện giải thích
+        loadQuestion();
+        
+        // Cuộn xuống giải thích
+        setTimeout(() => {
+             explanationArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function showExplanation(isCorrect, data) {
+        explanationArea.style.display = "block";
+        explanationText.innerText = data.explanation;
+
+        if (isCorrect) {
+            explanationArea.classList.remove("error-context");
+            explanationTitle.innerText = "CHÍNH XÁC!";
+            explanationTitle.style.color = "#155724";
+        } else {
+            explanationArea.classList.add("error-context");
+            explanationTitle.innerText = "SAI RỒI! ĐÁP ÁN ĐÚNG LÀ CÂU " + ["A", "B", "C", "D"][data.correct];
+            explanationTitle.style.color = "#721c24";
+        }
+    }
+
+    function changeQuestion(delta) {
+        const newIndex = currentQuestionIndex + delta;
+        
+        if (newIndex >= 0 && newIndex < quizData.length) {
+            currentQuestionIndex = newIndex;
+            loadQuestion();
+        } else if (newIndex >= quizData.length) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        document.getElementById("quiz-interface").style.display = "none";
+        document.getElementById("result-area").style.display = "block";
+        document.getElementById("final-score").innerText = score;
+        
+        const msgEl = document.getElementById("result-msg");
+        if (score >= 60) msgEl.innerText = "Xuất sắc! Bạn đã nắm trọn vẹn kiến thức chương 4.";
+        else if (score >= 45) msgEl.innerText = "Khá tốt! Hãy ôn lại các loại Virus và quy trình PenTest.";
+        else msgEl.innerText = "Bạn cần đọc kỹ lại slide để nắm chắc kiến thức.";
+    }
+
+    // Khởi chạy
+    loadQuestion();
+</script>
+
+</body>
+</html>
