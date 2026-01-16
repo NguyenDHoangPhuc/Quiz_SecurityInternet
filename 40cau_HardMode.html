@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện thi Bảo Mật Internet - NT405 (Hard Mode)</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f3f4f6; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-btn:disabled { opacity: 1; cursor: default; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        // Dữ liệu câu hỏi (Giữ nguyên như cũ)
+        const questionData = [
+            // --- CHƯƠNG 1 & 2: TỔNG QUAN, THĂM DÒ & QUÉT ---
+            {
+                id: 1,
+                topic: "Tổng quan",
+                question: "Nguyên lý 'Defense in Depth' (Phòng thủ theo chiều sâu) được hiểu chính xác nhất là gì?",
+                options: [
+                    "Tập trung ngân sách vào một hệ thống Firewall thế hệ mới cực mạnh tại cổng kết nối.",
+                    "Sử dụng chiến lược bảo mật dựa trên sự che giấu (Security through Obscurity).",
+                    "Triển khai đa lớp bảo mật (Vật lý, Mạng, Host, Ứng dụng) để hỗ trợ lẫn nhau.",
+                    "Xây dựng hệ thống Honeypot dày đặc để đánh lạc hướng kẻ tấn công.",
+                    "Thiết lập chính sách chỉ cho phép truy cập mạng nội bộ qua VPN."
+                ],
+                correct: 2,
+                explanation: "Defense in Depth không dựa vào một thiết bị duy nhất mà là sự phối hợp nhiều lớp. Nếu một lớp thất bại, các lớp khác vẫn bảo vệ hệ thống. (Chương 1)"
+            },
+            {
+                id: 2,
+                topic: "Tổng quan",
+                question: "Theo quy trình chuẩn (ví dụ CEH), trình tự các bước tấn công của Hacker là gì?",
+                options: [
+                    "Reconnaissance -> Scanning -> Gaining Access -> Maintaining Access -> Clearing Tracks",
+                    "Scanning -> Enumeration -> Footprinting -> System Hacking -> Covering Tracks",
+                    "Footprinting -> Gaining Access -> Scanning -> Enumeration -> Backdoor Installation",
+                    "System Hacking -> Escalating Privileges -> Scanning -> Reconnaissance -> Clearing Logs",
+                    "Reconnaissance -> Gaining Access -> Enumeration -> Scanning -> Maintaining Access"
+                ],
+                correct: 0,
+                explanation: "Trình tự đúng: Thăm dò (Reconnaissance/Footprinting) -> Quét (Scanning) -> Chiếm quyền (Gaining Access) -> Duy trì (Maintaining Access) -> Xóa dấu vết (Clearing Tracks). (Chương 1)"
+            },
+            {
+                id: 3,
+                topic: "Thăm dò (Footprinting)",
+                question: "Trong giai đoạn Footprinting, hacker thường nhắm đến những thông tin nào sau đây?",
+                options: [
+                    "Danh sách các tài khoản Root/Admin và mật khẩu của chúng.",
+                    "Mã nguồn (Source code) chi tiết của phần mềm ứng dụng.",
+                    "Thông tin cấu trúc mạng, tên miền, dải IP và các điểm truy cập VPN.",
+                    "Nội dung chi tiết của cơ sở dữ liệu khách hàng (Credit Card, Email).",
+                    "Các lỗ hổng tràn bộ đệm (Buffer Overflow) trong nhân hệ điều hành."
+                ],
+                correct: 2,
+                explanation: "Footprinting là bước đầu thu thập thông tin tổng quát (IP, Domain, VPN point) để lên kế hoạch, chưa phải là lúc lấy mật khẩu hay mã nguồn. (Chương 2.1)"
+            },
+            {
+                id: 4,
+                topic: "Thăm dò (Footprinting)",
+                question: "Hoạt động nào sau đây KHÔNG thuộc nhóm Passive Footprinting (Thăm dò thụ động)?",
+                options: [
+                    "Tra cứu thông tin đăng ký tên miền thông qua dịch vụ WHOIS.",
+                    "Tìm kiếm các tài liệu nhạy cảm bị lộ trên Google (Google Dorking).",
+                    "Gọi điện cho bộ phận Helpdesk giả danh nhân viên mới để xin sơ đồ mạng.",
+                    "Theo dõi hoạt động của nhân viên công ty trên mạng xã hội LinkedIn.",
+                    "Phân tích thông tin tuyển dụng để đoán biết công nghệ công ty đang dùng."
+                ],
+                correct: 2,
+                explanation: "Passive là không tương tác trực tiếp. Gọi điện thoại (Social Engineering) là tương tác trực tiếp, có nguy cơ bị phát hiện cao hơn. (Chương 2.1)"
+            },
+            {
+                id: 5,
+                topic: "Thăm dò (Footprinting)",
+                question: "Kỹ thuật thu thập thông tin tình báo từ các nguồn công khai (Open Source) mà không gửi gói tin nào đến mục tiêu được gọi là:",
+                options: [
+                    "Active Scanning",
+                    "Passive Online Footprinting",
+                    "Network Enumeration",
+                    "Social Engineering",
+                    "Banner Grabbing"
+                ],
+                correct: 1,
+                explanation: "Passive Online Footprinting (hay OSINT) sử dụng các nguồn có sẵn trên internet, không chạm vào server mục tiêu. (Chương 2.1)"
+            },
+            {
+                id: 6,
+                topic: "Quét mạng (Scanning)",
+                question: "Hacker phối hợp các công cụ NMAP, Netcraft, SocksChain và SSL Proxy nhằm mục đích chính là gì?",
+                options: [
+                    "Thực hiện tấn công từ chối dịch vụ (DDoS) vào Web Server.",
+                    "Vừa quét hệ thống (Scanning) vừa che giấu danh tính qua chuỗi Proxy.",
+                    "Bẻ khóa mật khẩu quản trị viên bằng từ điển (Dictionary Attack).",
+                    "Tiêm mã độc (SQL Injection) vào cơ sở dữ liệu của nạn nhân.",
+                    "Nghe lén và giải mã các gói tin SSL/TLS trên đường truyền."
+                ],
+                correct: 1,
+                explanation: "NMAP/Netcraft để thu thập thông tin, trong khi SocksChain/SSL Proxy giúp ẩn IP nguồn để tránh bị phát hiện. (Chương 2.2)"
+            },
+            {
+                id: 7,
+                topic: "Quét mạng (Scanning)",
+                question: "Trong TCP Header, 6 cờ (Flags) điều khiển cơ bản bao gồm những cờ nào?",
+                options: [
+                    "SYN, ACK, FIN, RST, PSH, URG",
+                    "SYN, ACK, FIN, PING, PONG, REQ",
+                    "GET, POST, HEAD, PUT, DELETE, OPTION",
+                    "SYN, SEQ, ACK, DAT, FIN, ERR",
+                    "URG, PSH, RST, SYN, FIN, END"
+                ],
+                correct: 0,
+                explanation: "Bộ cờ chuẩn của TCP: Synchronize, Acknowledge, Finish, Reset, Push, Urgent. Các phương án khác chứa lệnh HTTP hoặc từ bịa. (Chương 2.2)"
+            },
+            {
+                id: 8,
+                topic: "Quét mạng (Scanning)",
+                question: "Gói tin TCP có các cờ FIN, URG và PSH được bật cùng lúc (như đèn cây thông Noel) là dấu hiệu của kỹ thuật quét nào?",
+                options: [
+                    "TCP Connect Scan (Full Open)",
+                    "Stealth SYN Scan (Half Open)",
+                    "Xmas Tree Scan",
+                    "Null Scan",
+                    "ICMP Ping Sweep"
+                ],
+                correct: 2,
+                explanation: "Xmas Scan bật các cờ bất thường (FIN-URG-PSH) để xem phản ứng của OS. Nó được ví như cây thông Noel sáng đèn. (Chương 2.2)"
+            },
+            {
+                id: 9,
+                topic: "Quét mạng (Scanning)",
+                question: "Loại Firewall nào dễ bị vượt qua nhất bởi kỹ thuật phân mảnh gói tin (Packet Fragmentation)?",
+                options: [
+                    "Stateful Inspection Firewall (Giám sát trạng thái)",
+                    "Application Level Gateway (Proxy)",
+                    "Packet Filtering Firewall (Stateless - Lọc gói tĩnh)",
+                    "Next-Generation Firewall (NGFW)",
+                    "Circuit-Level Gateway"
+                ],
+                correct: 2,
+                explanation: "Packet Filtering Firewall (Stateless) chỉ kiểm tra từng gói riêng lẻ. Nếu chia nhỏ gói tin (fragment), nó không ghép lại để kiểm tra nội dung, do đó dễ bị lọt lưới. (Chương 2.2)"
+            },
+            {
+                id: 10,
+                topic: "Quét mạng (Scanning)",
+                question: "Công cụ nào sau đây là tiêu chuẩn công nghiệp dùng để tự động rà quét và đánh giá lỗ hổng bảo mật?",
+                options: [
+                    "Wireshark",
+                    "Nessus (hoặc GFI LANGuard)",
+                    "Metasploit",
+                    "Aircrack-ng",
+                    "John the Ripper"
+                ],
+                correct: 1,
+                explanation: "Wireshark để bắt gói tin, Metasploit để khai thác, John để crack pass. Chỉ có Nessus là chuyên về Vulnerability Scanning. (Chương 2.2)"
+            },
+            {
+                id: 11,
+                topic: "Quét mạng (Scanning)",
+                question: "Ngoài việc giới hạn vòng đời gói tin, giá trị TTL (Time To Live) còn giúp Hacker xác định điều gì?",
+                options: [
+                    "Dung lượng băng thông mạng của mục tiêu.",
+                    "Loại hệ điều hành (OS Fingerprinting) và cấu trúc mạng.",
+                    "Thời gian uptime (thời gian hoạt động) của máy chủ.",
+                    "Phiên bản phần mềm Antivirus đang chạy.",
+                    "Danh sách các tài khoản người dùng đang đăng nhập."
+                ],
+                correct: 1,
+                explanation: "Các OS khác nhau có giá trị TTL mặc định khác nhau (VD: Win=128, Linux=64). TTL cũng dùng trong Traceroute để vẽ sơ đồ mạng. (Chương 2.2)"
+            },
+            {
+                id: 12,
+                topic: "Quét mạng (Scanning)",
+                question: "Trong tấn công dò đường (như Traceroute), khi Hacker cố tình chỉnh TTL giảm về 0, nạn nhân sẽ phản hồi gì?",
+                options: [
+                    "Gói tin TCP SYN-ACK chấp nhận kết nối.",
+                    "Thông báo lỗi ICMP 'Time Exceeded' (Type 11).",
+                    "Thông báo lỗi ICMP 'Destination Unreachable'.",
+                    "Gói tin TCP RST ngắt kết nối ngay lập tức.",
+                    "Không có phản hồi nào (Silent Drop)."
+                ],
+                correct: 1,
+                explanation: "Khi TTL = 0, Router sẽ hủy gói tin và gửi lại thông báo ICMP Time Exceeded, giúp hacker biết địa chỉ IP của Router đó. (Chương 2.1/7)"
+            },
+            {
+                id: 13,
+                topic: "Tấn công hệ thống",
+                question: "Phương pháp bẻ khóa mật khẩu bằng cách thử lần lượt mọi tổ hợp ký tự có thể có (aaaa, aaab...) gọi là:",
+                options: [
+                    "Dictionary Attack (Tấn công từ điển)",
+                    "Brute Force Attack (Tấn công vét cạn)",
+                    "Rainbow Table Attack (Bảng cầu vồng)",
+                    "Social Engineering (Kỹ thuật xã hội)",
+                    "Rule-based Attack (Tấn công theo luật)"
+                ],
+                correct: 1,
+                explanation: "Dictionary dùng danh sách từ có sẵn. Brute Force thử TẤT CẢ các khả năng, tốn thời gian nhất nhưng chắc chắn tìm ra (nếu đủ thời gian). (Chương 3)"
+            },
+            {
+                id: 14,
+                topic: "Tấn công hệ thống",
+                question: "Trong danh sách sau, công cụ nào KHÔNG thuộc nhóm công cụ bẻ khóa mật khẩu (Password Cracking)?",
+                options: [
+                    "Cain & Abel",
+                    "John the Ripper",
+                    "L0phtCrack",
+                    "NMAP",
+                    "Hydra"
+                ],
+                correct: 3,
+                explanation: "NMAP là công cụ quét mạng (Scanner). Các công cụ còn lại đều chuyên dùng để crack hash hoặc brute force mật khẩu. (Chương 3)"
+            },
+            {
+                id: 15,
+                topic: "Tấn công hệ thống",
+                question: "Biện pháp nào hiệu quả nhất để chống Brute Force Online mà vẫn đảm bảo tính tiện dụng cho người dùng?",
+                options: [
+                    "Yêu cầu người dùng đặt mật khẩu dài tối thiểu 30 ký tự.",
+                    "Thiết lập chính sách Account Lockout (Khóa sau n lần sai).",
+                    "Sử dụng CAPTCHA cho mỗi lần đăng nhập.",
+                    "Chỉ cho phép đăng nhập trong giờ hành chính.",
+                    "Cấm hoàn toàn việc đăng nhập từ xa."
+                ],
+                correct: 1,
+                explanation: "Account Lockout (ví dụ khóa 15 phút sau 5 lần sai) làm chậm hacker đáng kể khiến brute force trở nên vô dụng, trong khi user thật ít bị ảnh hưởng. (Chương 3)"
+            },
+            {
+                id: 16,
+                topic: "Tấn công hệ thống",
+                question: "Mục đích cốt lõi của kỹ thuật Steganography (Giấu tin) khác với Cryptography (Mật mã) ở điểm nào?",
+                options: [
+                    "Steganography mã hóa nội dung để không ai đọc được.",
+                    "Steganography ẩn giấu sự tồn tại của thông điệp trong vật chứa khác.",
+                    "Steganography nén dữ liệu để truyền tải nhanh hơn.",
+                    "Steganography dùng để xác thực danh tính người gửi.",
+                    "Steganography tạo ra chữ ký số không thể giả mạo."
+                ],
+                correct: 1,
+                explanation: "Cryptography: Thông điệp lộ liễu nhưng không đọc được. Steganography: Không ai biết có thông điệp đang tồn tại (ví dụ giấu text trong ảnh). (Chương 3)"
+            },
+            {
+                id: 17,
+                topic: "Tấn công hệ thống",
+                question: "Hacker sử dụng tính năng NTFS Alternate Data Streams (ADS) trên Windows chủ yếu để làm gì?",
+                options: [
+                    "Tăng tốc độ sao chép và di chuyển tập tin hệ thống.",
+                    "Che giấu mã độc (Malware) đằng sau các tập tin hợp lệ.",
+                    "Tạo lỗ hổng để thực hiện tấn công từ chối dịch vụ (DoS).",
+                    "Vượt qua cơ chế xác thực của Active Directory.",
+                    "Ghi đè lên các bản ghi nhật ký (Log) của hệ thống."
+                ],
+                correct: 1,
+                explanation: "ADS cho phép gắn dữ liệu ẩn vào file mà không làm thay đổi kích thước hiển thị của file đó, rất lý tưởng để giấu malware. (Chương 3)"
+            },
+            {
+                id: 18,
+                topic: "Tấn công hệ thống",
+                question: "Hành động ưu tiên số 1 khi phát hiện máy tính bị nhiễm Keylogger là gì?",
+                options: [
+                    "Sử dụng bàn phím ảo (On-screen Keyboard) để tiếp tục làm việc.",
+                    "Ngắt kết nối mạng ngay lập tức để ngăn gửi dữ liệu ra ngoài.",
+                    "Đổi toàn bộ mật khẩu tài khoản ngân hàng và email ngay trên máy đó.",
+                    "Cài đặt lại hệ điều hành Windows từ đầu.",
+                    "Tìm kiếm file keylogger trong thư mục System32 để xóa."
+                ],
+                correct: 1,
+                explanation: "Phải ngắt mạng (Isolation) trước tiên để cắt đứt liên lạc của Keylogger với Hacker. Nếu đổi pass trên máy đó khi chưa sạch malware thì pass mới cũng bị mất. (Chương 3)"
+            },
+            {
+                id: 19,
+                topic: "Mã độc (Malware)",
+                question: "Máy nghi nhiễm Trojan nhưng Antivirus không báo. Bạn thấy Port 6000 mở. Bước xử lý tiếp theo hợp lý nhất là?",
+                options: [
+                    "Cấu hình Firewall chặn Port 6000 và tiếp tục theo dõi.",
+                    "Dùng netstat hoặc fport tìm Process ID đang chiếm Port 6000 để kiểm tra.",
+                    "Khởi động lại máy tính để đóng tất cả các kết nối mạng.",
+                    "Cài đặt song song 2-3 phần mềm Antivirus khác nhau để quét lại.",
+                    "Xóa file ứng dụng vừa cài đặt gần nhất."
+                ],
+                correct: 1,
+                explanation: "Khi AV thất bại, phải phân tích thủ công. Việc xác định tiến trình (Process) nào đang mở Port lạ sẽ giúp tìm ra file thực thi của Trojan. (Chương 4)"
+            },
+            {
+                id: 20,
+                topic: "Mã độc (Malware)",
+                question: "Đặc điểm phân biệt chính giữa Worm (Sâu) và Virus là gì?",
+                options: [
+                    "Worm phá hủy phần cứng, Virus chỉ phá hủy phần mềm.",
+                    "Worm lây lan qua email, Virus lây lan qua USB.",
+                    "Worm tự nhân bản và lây lan qua mạng không cần vật chủ (host file).",
+                    "Worm không thể bị phát hiện bởi Antivirus, Virus thì có.",
+                    "Worm chỉ tấn công Linux, Virus chỉ tấn công Windows."
+                ],
+                correct: 2,
+                explanation: "Virus cần đính vào một file vật chủ (.exe, .doc) để lây. Worm là chương trình độc lập, tự tìm lỗ hổng mạng để nhảy sang máy khác. (Chương 4)"
+            },
+            {
+                id: 21,
+                topic: "Mã độc (Malware)",
+                question: "Khi đánh giá một phần mềm Antivirus, các chỉ số nào quan trọng nhất?",
+                options: [
+                    "Giao diện người dùng đẹp, hỗ trợ chế độ Dark Mode, giá rẻ.",
+                    "Tỷ lệ phát hiện (Detection rate), Tỷ lệ báo giả (False Positive), Tốc độ quét.",
+                    "Dung lượng bộ cài đặt nhỏ, ít chiếm RAM, không cần Internet.",
+                    "Thương hiệu nổi tiếng, quảng cáo nhiều, có hỗ trợ tiếng Việt.",
+                    "Khả năng tự động xóa file hệ thống bị nhiễm mà không cần hỏi."
+                ],
+                correct: 1,
+                explanation: "Một AV tốt phải bắt đúng malware (Detection rate cao) và không xóa nhầm file sạch (False Positive thấp). (Chương 4)"
+            },
+            {
+                id: 22,
+                topic: "Nghe lén (Sniffing)",
+                question: "Wireshark được định nghĩa chính xác nhất là công cụ gì?",
+                options: [
+                    "Hệ thống phát hiện xâm nhập (IDS) thời gian thực.",
+                    "Công cụ phân tích giao thức mạng (Network Protocol Analyzer/Sniffer).",
+                    "Phần mềm tạo tường lửa cá nhân (Personal Firewall).",
+                    "Công cụ quét lỗ hổng bảo mật web (Web Vulnerability Scanner).",
+                    "Chương trình bẻ khóa mật khẩu Wifi (Wifi Cracker)."
+                ],
+                correct: 1,
+                explanation: "Wireshark dùng để bắt (capture) và hiển thị chi tiết nội dung từng gói tin đi qua card mạng. (Chương 5)"
+            },
+            {
+                id: 23,
+                topic: "Nghe lén (Sniffing)",
+                question: "Tấn công MAC Flooding nhắm vào Switch nhằm đạt được mục đích gì?",
+                options: [
+                    "Làm Switch bị treo và khởi động lại liên tục (DoS).",
+                    "Làm tràn bảng CAM, khiến Switch chuyển sang chế độ Fail-Open (như Hub).",
+                    "Chiếm quyền điều khiển tài khoản Admin của Switch.",
+                    "Thay đổi địa chỉ MAC của cổng Uplink trên Switch.",
+                    "Chặn toàn bộ lưu lượng mạng đi qua Switch."
+                ],
+                correct: 1,
+                explanation: "Khi bảng CAM đầy, Switch không thể học MAC mới nên nó sẽ 'Flood' gói tin ra tất cả các cổng, cho phép hacker nghe lén được traffic của người khác. (Chương 5)"
+            },
+            {
+                id: 24,
+                topic: "Nghe lén (Sniffing)",
+                question: "Để nghe lén giao tiếp NFC (Near Field Communication), hacker cần điều kiện gì?",
+                options: [
+                    "Có thể thực hiện từ bất kỳ đâu qua Internet.",
+                    "Phải đứng cách nạn nhân ít nhất 100 mét.",
+                    "Phải ở cự ly cực gần (vài cm đến vài mét) tùy thiết bị anten.",
+                    "Phải cài đặt mã độc vào điện thoại nạn nhân trước.",
+                    "Phải biết số điện thoại của nạn nhân."
+                ],
+                correct: 2,
+                explanation: "NFC là giao tiếp trường gần. Để nghe lén (Eavesdropping), hacker phải tiếp cận vật lý rất gần thiết bị. (Chương 5)"
+            },
+            {
+                id: 25,
+                topic: "Nghe lén (Sniffing)",
+                question: "Giải pháp tối ưu để bảo vệ dữ liệu khi buộc phải dùng Wifi công cộng là gì?",
+                options: [
+                    "Sử dụng chế độ ẩn danh (Incognito Mode) của trình duyệt.",
+                    "Chỉ truy cập các trang web tin tức, không đăng nhập.",
+                    "Sử dụng VPN (Virtual Private Network) để mã hóa đường truyền.",
+                    "Tắt tính năng chia sẻ file (File Sharing) trên máy tính.",
+                    "Đổi địa chỉ MAC của máy tính liên tục."
+                ],
+                correct: 2,
+                explanation: "Chỉ có VPN mới tạo ra đường hầm mã hóa (Encrypted Tunnel) bảo vệ dữ liệu khỏi các kẻ nghe lén (Sniffers) trong cùng mạng Wifi. (Chương 5)"
+            },
+            {
+                id: 26,
+                topic: "Chiếm phiên (Hijacking)",
+                question: "Bản chất kỹ thuật của tấn công Session Hijacking là gì?",
+                options: [
+                    "Hacker giả mạo địa chỉ IP của máy chủ để lừa người dùng.",
+                    "Hacker chiếm đoạt Session ID hợp lệ để mạo danh người dùng.",
+                    "Hacker sử dụng Keylogger để lấy mật khẩu đăng nhập.",
+                    "Hacker tấn công DoS làm ngắt kết nối của người dùng.",
+                    "Hacker tiêm mã độc vào trình duyệt của người dùng."
+                ],
+                correct: 1,
+                explanation: "Session Hijacking thành công khi Hacker có được Session ID (token) mà server đang tin tưởng, cho phép truy cập không cần login lại. (Chương 8)"
+            },
+            {
+                id: 27,
+                topic: "Chiếm phiên (Hijacking)",
+                question: "Tại sao tấn công Session Hijacking thường dễ thành công trên các hệ thống cũ?",
+                options: [
+                    "Do mật khẩu người dùng đặt quá đơn giản.",
+                    "Do máy chủ web có cấu hình phần cứng yếu.",
+                    "Do cơ chế sinh Session ID yếu hoặc truyền tải không mã hóa (Clear text).",
+                    "Do người dùng không cài phần mềm diệt virus.",
+                    "Do mạng Internet có độ trễ cao."
+                ],
+                correct: 2,
+                explanation: "Nếu Session ID dễ đoán hoặc truyền qua HTTP thường, hacker dễ dàng bắt được và sử dụng lại (Replay attack). (Chương 8)"
+            },
+            {
+                id: 28,
+                topic: "Tấn công DoS",
+                question: "Nhiều gói HTTP Request giống hệt nhau gửi từ các IP khác nhau trong cùng 1 thời điểm là dấu hiệu của:",
+                options: [
+                    "SQL Injection Attack (Tấn công cơ sở dữ liệu)",
+                    "HTTP Flood - Một dạng tấn công DDoS lớp ứng dụng (Layer 7)",
+                    "Man-in-the-Middle Attack (Tấn công xen giữa)",
+                    "DNS Poisoning Attack (Đầu độc DNS)",
+                    "Cross-Site Scripting (XSS)"
+                ],
+                correct: 1,
+                explanation: "Đây là dấu hiệu của Botnet. Các máy tính ma (Zombies) cùng chạy một kịch bản tấn công giống nhau nên nội dung gói tin y hệt nhau. (Chương 7)"
+            },
+            {
+                id: 29,
+                topic: "Tấn công DoS",
+                question: "Hệ thống nhận được hàng loạt gói tin ICMP từ 100 địa chỉ IP khác nhau trong vài giây. Đây là?",
+                options: [
+                    "Ping of Death",
+                    "Network Mapping (Vẽ sơ đồ mạng)",
+                    "Smurf Attack hoặc ICMP Flood (DDoS)",
+                    "ARP Spoofing",
+                    "TCP SYN Scan"
+                ],
+                correct: 2,
+                explanation: "Lưu lượng ICMP bất thường từ nhiều nguồn đổ về một đích là đặc trưng của Smurf Attack (lợi dụng Broadcast) hoặc ICMP Flood. (Chương 7)"
+            },
+            {
+                id: 30,
+                topic: "Tấn công DoS",
+                question: "Tính tổng băng thông tấn công: 500,000 bots * 200 Kbps * 24 giờ?",
+                options: [
+                    "Khoảng 100 Gbps tổng lưu lượng.",
+                    "Khoảng 8.64 Petabits tổng lưu lượng.",
+                    "Khoảng 2400 Terabytes tổng lưu lượng.",
+                    "Khoảng 100 Terabits tổng lưu lượng.",
+                    "Khoảng 500 Gigabits tổng lưu lượng."
+                ],
+                correct: 1,
+                explanation: "Lưu ý câu hỏi thường hỏi 'Tổng dữ liệu' hay 'Băng thông tức thời'. 500k * 200Kbps = 100,000,000 Kbps = 100 Gbps. Nếu tính tổng volume 24h thì là con số khổng lồ (8640 Tb). Đáp án B (8640 Tb ~ 8.64 Pb) là chính xác về tổng volume. (Chương 7)"
+            },
+            {
+                id: 31,
+                topic: "Tấn công DoS",
+                question: "Vị trí tối ưu nhất để đặt Honey Pot nhằm dụ hacker mà không gây nguy hiểm cho dữ liệu thật?",
+                options: [
+                    "Đặt trực tiếp trong vùng mạng nội bộ (Internal Network).",
+                    "Đặt trên máy tính của Giám đốc (CEO).",
+                    "Đặt trong vùng DMZ (Demilitarized Zone) tách biệt.",
+                    "Đặt ngay tại cổng Internet trước cả Firewall.",
+                    "Cài đặt trên chính Database Server."
+                ],
+                correct: 2,
+                explanation: "DMZ là vùng trung gian. Nếu Honey Pot bị chiếm, hacker vẫn bị chặn bởi Firewall khi cố vào mạng nội bộ (Internal). (Chương 7/8)"
+            },
+            {
+                id: 32,
+                topic: "Kỹ thuật xã hội (SE)",
+                question: "Hình thức tấn công Social Engineering phổ biến nhất trên thiết bị di động (Mobile-based) là gì?",
+                options: [
+                    "Khai thác lỗi phần cứng của chip sóng 5G.",
+                    "Gửi tin nhắn SMS lừa đảo (Smishing) hoặc Ứng dụng giả mạo.",
+                    "Tấn công qua Bluetooth khi đi ngoài đường.",
+                    "Lợi dụng tính năng sạc nhanh để truyền mã độc.",
+                    "Đánh cắp điện thoại để tháo lấy linh kiện."
+                ],
+                correct: 1,
+                explanation: "Người dùng di động dễ bị lừa bởi các tin nhắn trúng thưởng, cảnh báo tài khoản (Smishing) hoặc cài App đòi quyền Admin. (Chương 6)"
+            },
+            {
+                id: 33,
+                topic: "Kỹ thuật xã hội (SE)",
+                question: "Kỹ thuật nào sau đây được phân loại là Non-Electronic Attack (Tấn công phi điện tử)?",
+                options: [
+                    "Phishing Email (Gửi thư lừa đảo).",
+                    "Dumpster Diving (Bới rác) & Shoulder Surfing (Nhìn trộm).",
+                    "SQL Injection (Tiêm mã độc SQL).",
+                    "Man-in-the-Middle (Tấn công xen giữa).",
+                    "DNS Spoofing (Giả mạo DNS)."
+                ],
+                correct: 1,
+                explanation: "Đây là các phương pháp vật lý, lợi dụng sơ hở con người, không cần dùng máy tính hay mã lệnh. (Chương 6)"
+            },
+            {
+                id: 34,
+                topic: "Tổng hợp",
+                question: "Khi xác định đã xảy ra sự cố lộ dữ liệu (Data Leakage), bước phản ứng đầu tiên cần làm là gì?",
+                options: [
+                    "Tiến hành điều tra Forensics để tìm thủ phạm.",
+                    "Cô lập hệ thống (Containment) để ngăn chặn thiệt hại lan rộng.",
+                    "Thông báo ngay cho cơ quan báo chí và truyền thông.",
+                    "Khôi phục dữ liệu từ bản sao lưu (Backup) gần nhất.",
+                    "Sa thải nhân viên quản trị mạng chịu trách nhiệm."
+                ],
+                correct: 1,
+                explanation: "Trong quy trình Incident Response: Sau khi xác định (Identification) là phải Cô lập (Containment) ngay. Điều tra hay khôi phục tính sau. (Chương 1)"
+            },
+             {
+                id: 35,
+                topic: "Tổng hợp",
+                question: "Kỹ thuật nào sau đây KHÔNG được coi là nghe lén (Sniffing) trên đường truyền?",
+                options: [
+                    "Sử dụng Wireshark bắt gói tin.",
+                    "Thực hiện ARP Poisoning để chuyển hướng traffic.",
+                    "Thực hiện Phishing để lừa người dùng nhập mật khẩu.",
+                    "Thực hiện MAC Flooding trên Switch.",
+                    "Thực hiện DNS Spoofing."
+                ],
+                correct: 2,
+                explanation: "Phishing là tấn công vào tâm lý người dùng (Social Engineering), không phải là kỹ thuật kỹ thuật bắt gói tin (Sniffing) ở tầng mạng. (Chương 5/6)"
+            },
+            {
+                id: 36,
+                topic: "Tổng hợp",
+                question: "Hành động giấu một file văn bản mật vào bên trong một file ảnh .JPG gọi là:",
+                options: [
+                    "Data Encryption (Mã hóa dữ liệu).",
+                    "Steganography (Kỹ thuật giấu tin).",
+                    "Data Compression (Nén dữ liệu).",
+                    "Digital Watermarking (Thủy vân số).",
+                    "Packet Encapsulation (Đóng gói gói tin)."
+                ],
+                correct: 1,
+                explanation: "Steganography nhúng dữ liệu vào vật chứa (ảnh, nhạc) để qua mắt sự kiểm duyệt. (Chương 3)"
+            },
+            {
+                id: 37,
+                topic: "Tổng hợp",
+                question: "Nhóm công cụ nào sau đây chuyên dùng cho giai đoạn Footprinting (Thăm dò)?",
+                options: [
+                    "Wireshark, Tcpdump, Snort.",
+                    "John the Ripper, Cain & Abel, Hydra.",
+                    "Whois, NSLookup, Maltego, Google Hacking.",
+                    "Metasploit, Core Impact, Canvas.",
+                    "Aircrack-ng, Kismet, Reaver."
+                ],
+                correct: 2,
+                explanation: "Whois/NSLookup tra cứu thông tin tên miền/DNS. Maltego vẽ sơ đồ quan hệ. (Chương 2.1)"
+            },
+            {
+                id: 38,
+                topic: "Tổng hợp",
+                question: "Biện pháp kỹ thuật nào hiệu quả nhất để chống lại ARP Poisoning trong mạng LAN?",
+                options: [
+                    "Thay thế toàn bộ Switch bằng Hub.",
+                    "Sử dụng Dynamic ARP Inspection (DAI) trên Switch và gán ARP tĩnh.",
+                    "Tắt kết nối Internet của toàn bộ công ty.",
+                    "Cài đặt phần mềm diệt Virus trên máy trạm.",
+                    "Sử dụng địa chỉ IP động (DHCP) cho tất cả máy tính."
+                ],
+                correct: 1,
+                explanation: "DAI (trên Cisco Switch) kiểm tra tính hợp lệ của gói ARP. Gán ARP tĩnh (Static ARP) ngăn chặn việc giả mạo nhưng khó quản lý. (Chương 5)"
+            },
+            {
+                id: 39,
+                topic: "Tổng hợp",
+                question: "Mạng máy tính ma (Botnet) thường sử dụng giao thức nào để nhận lệnh từ Hacker (C&C)?",
+                options: [
+                    "Chỉ sử dụng giao thức HTTP.",
+                    "Đa dạng: IRC, HTTP, DNS, P2P...",
+                    "Chỉ sử dụng giao thức FTP.",
+                    "Chỉ sử dụng giao thức Telnet.",
+                    "Chỉ sử dụng giao thức Bluetooth."
+                ],
+                correct: 1,
+                explanation: "Botnet hiện đại rất linh hoạt, dùng IRC (cổ điển), HTTP (web), thậm chí DNS tunneling để ẩn mình. (Chương 7)"
+            },
+            {
+                id: 40,
+                topic: "Tổng hợp",
+                question: "Mục đích chính của bước 'Covering Tracks' (Xóa dấu vết) trong quy trình tấn công là gì?",
+                options: [
+                    "Giải phóng dung lượng ổ cứng cho nạn nhân.",
+                    "Duy trì quyền truy cập ẩn danh và tránh bị truy tố pháp luật.",
+                    "Giúp quản trị viên dễ dàng khắc phục sự cố sau này.",
+                    "Làm cho máy tính nạn nhân chạy nhanh hơn.",
+                    "Kiểm tra xem các công cụ tấn công có hoạt động tốt không."
+                ],
+                correct: 1,
+                explanation: "Hacker xóa log, xóa lịch sử bash... để quản trị viên không biết mình đã bị hack và để hacker có thể quay lại sau này (Backdoor). (Chương 3)"
+            }
+        ];
+
+        function App() {
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            
+            // Thay vì lưu selectedOption đơn lẻ, ta lưu mảng đáp án của người dùng
+            // Mặc định là null cho tất cả các câu
+            const [userAnswers, setUserAnswers] = useState(Array(questionData.length).fill(null));
+            
+            const [examFinished, setExamFinished] = useState(false);
+
+            // Các biến dẫn xuất (Derived state)
+            const currentQ = questionData[currentQuestion];
+            const currentAnswer = userAnswers[currentQuestion]; // Đáp án đã chọn ở câu hiện tại (nếu có)
+            const isAnswered = currentAnswer !== null; // Đã trả lời hay chưa?
+
+            // Tính điểm dynamically
+            const score = userAnswers.reduce((acc, answer, index) => {
+                if (answer === null) return acc;
+                return answer === questionData[index].correct ? acc + 1 : acc;
+            }, 0);
+
+            const handleOptionClick = (index) => {
+                // Nếu đã trả lời rồi thì không cho chọn lại (Hard Mode)
+                if (isAnswered) return;
+
+                const newAnswers = [...userAnswers];
+                newAnswers[currentQuestion] = index;
+                setUserAnswers(newAnswers);
+            };
+
+            const handleNext = () => {
+                if (currentQuestion < questionData.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                } else {
+                    setExamFinished(true);
+                }
+            };
+
+            // Hàm xử lý nút Back
+            const handleBack = () => {
+                if (currentQuestion > 0) {
+                    setCurrentQuestion(currentQuestion - 1);
+                }
+            };
+
+            const handleRestart = () => {
+                setCurrentQuestion(0);
+                setUserAnswers(Array(questionData.length).fill(null));
+                setExamFinished(false);
+            };
+
+            if (examFinished) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center fade-in">
+                            <h2 className="text-3xl font-bold text-blue-600 mb-4">Kết Thúc Bài Thi</h2>
+                            <p className="text-gray-600 mb-6">Bạn đã hoàn thành bài luyện tập (Chế độ Khó).</p>
+                            <div className="text-6xl font-bold text-gray-800 mb-4">
+                                {score} / {questionData.length}
+                            </div>
+                            <p className="text-lg mb-8">
+                                {(score / questionData.length) * 10 >= 8 
+                                    ? <span className="text-green-500 font-bold">Xuất sắc! Kiến thức vững vàng.</span> 
+                                    : (score / questionData.length) * 10 >= 5 
+                                    ? <span className="text-yellow-500 font-bold">Khá tốt, nhưng hãy cẩn thận với các bẫy.</span>
+                                    : <span className="text-red-500 font-bold">Cần ôn tập kỹ hơn slide.</span>}
+                            </p>
+                            <button 
+                                onClick={handleRestart}
+                                className="bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition font-bold shadow-lg"
+                            >
+                                Làm lại đề thi
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen py-8 px-4 max-w-3xl mx-auto">
+                    {/* Header */}
+                    <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border-b-4 border-blue-500">
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-800">Bảo Mật Internet (NT405)</h1>
+                            <span className="text-sm text-red-500 font-bold uppercase tracking-wider">Hard Mode</span>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-sm text-gray-500">Câu hỏi</div>
+                            <div className="text-2xl font-bold text-blue-600">{currentQuestion + 1}/{questionData.length}</div>
+                        </div>
+                    </div>
+
+                    {/* Question Card */}
+                    <div className="bg-white rounded-lg shadow-lg p-6 mb-6 fade-in relative overflow-hidden">
+                        <h2 className="text-lg font-medium text-gray-800 mb-6 leading-relaxed border-l-4 border-yellow-400 pl-4">
+                            {currentQ.question}
+                        </h2>
+
+                        <div className="space-y-3">
+                            {currentQ.options.map((option, index) => {
+                                let btnClass = "w-full text-left p-4 rounded-lg border-2 transition duration-200 flex items-start option-btn ";
+                                if (isAnswered) {
+                                    if (index === currentQ.correct) {
+                                        btnClass += "border-green-500 bg-green-50 text-green-800 font-medium"; 
+                                    } else if (index === currentAnswer) {
+                                        btnClass += "border-red-500 bg-red-50 text-red-800"; 
+                                    } else {
+                                        btnClass += "border-gray-200 opacity-60 bg-gray-50"; 
+                                    }
+                                } else {
+                                    btnClass += "border-gray-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md";
+                                }
+
+                                return (
+                                    <button 
+                                        key={index} 
+                                        onClick={() => handleOptionClick(index)}
+                                        disabled={isAnswered}
+                                        className={btnClass}
+                                    >
+                                        <span className="font-bold mr-3 min-w-[24px]">{String.fromCharCode(65 + index)}.</span>
+                                        <span>{option}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Explanation Section */}
+                    {isAnswered && (
+                        <div className="bg-blue-50 border-l-4 border-blue-500 p-5 mb-6 rounded shadow-inner fade-in">
+                            <div className="flex items-center mb-3">
+                                <span className={`font-bold text-lg mr-2 ${currentAnswer === currentQ.correct ? 'text-green-600' : 'text-red-600'}`}>
+                                    {currentAnswer === currentQ.correct ? "✓ Chính xác!" : "✕ Sai rồi!"}
+                                </span>
+                                <span className="text-gray-600 text-sm bg-white px-2 py-1 rounded border">Đáp án đúng: {String.fromCharCode(65 + currentQ.correct)}</span>
+                            </div>
+                            <p className="text-gray-800 leading-relaxed">
+                                <span className="font-bold text-blue-800">Giải thích: </span>
+                                {currentQ.explanation}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between items-center">
+                        {/* Nút Back */}
+                        <button
+                            onClick={handleBack}
+                            disabled={currentQuestion === 0}
+                            className={`px-6 py-3 rounded-lg font-bold shadow-md transition transform border-2 ${
+                                currentQuestion === 0
+                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                            }`}
+                        >
+                            ← Quay lại
+                        </button>
+
+                        {/* Nút Next */}
+                        <button 
+                            onClick={handleNext}
+                            disabled={!isAnswered}
+                            className={`px-8 py-3 rounded-lg font-bold shadow-md transition transform ${
+                                isAnswered 
+                                ? 'bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-1' 
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                            {currentQuestion < questionData.length - 1 ? "Câu tiếp theo →" : "Xem kết quả"}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
