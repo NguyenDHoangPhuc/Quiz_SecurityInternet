@@ -191,9 +191,15 @@
             border: 1px solid #cbd5e1;
         }
         
-        .btn-restart:hover {
+        .btn-restart:hover:not(:disabled) {
             background-color: #f1f5f9;
             color: var(--primary-color);
+        }
+
+        /* Style cho nút Prev khi bị disabled */
+        .btn-restart:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-next {
@@ -252,14 +258,14 @@
         </div>
 
         <div class="controls">
-            <button class="btn btn-restart" onclick="resetQuiz()">Làm lại từ đầu</button>
+            <button class="btn btn-restart" id="prev-btn" onclick="prevQuestion()">← Câu trước đó</button>
             <button class="btn btn-next" id="next-btn" onclick="nextQuestion()">Câu tiếp theo →</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Dữ liệu câu hỏi ĐÃ ĐƯỢC XÁO TRỘN VỊ TRÍ ĐÁP ÁN
+    // Dữ liệu câu hỏi
     const questions = [
         {
             q: "Hệ thống phát hiện nhiều gói tin HTTP có cùng Cookies và tham số, nhưng lại được gửi từ các địa chỉ IP khác nhau. Đây là dấu hiệu của tấn công nào?",
@@ -517,6 +523,7 @@
     const explanation = document.getElementById('explanation');
     const explanationText = document.getElementById('explanation-text');
     const nextBtn = document.getElementById('next-btn');
+    const prevBtn = document.getElementById('prev-btn'); // Tham chiếu nút Prev
     const currentQSpan = document.getElementById('current-q');
     const diagramArea = document.getElementById('diagram-area');
     const progressBar = document.getElementById('progress-bar');
@@ -631,20 +638,56 @@
         }
 
         optionsArea.innerHTML = '';
-        explanation.style.display = 'none';
-        nextBtn.disabled = true;
+        
+        // Cấu hình nút Previous
+        if (currentQIndex === 0) {
+            prevBtn.disabled = true;
+        } else {
+            prevBtn.disabled = false;
+        }
+
+        // Kiểm tra xem câu này đã làm chưa (dựa vào userSelected)
+        const isAnswered = q.userSelected !== undefined;
+
+        if (isAnswered) {
+            // Nếu đã làm rồi -> hiển thị trạng thái cũ
+            explanationText.innerText = q.desc;
+            explanation.style.display = 'block';
+            nextBtn.disabled = false;
+        } else {
+            // Nếu chưa làm -> reset
+            explanation.style.display = 'none';
+            nextBtn.disabled = true;
+        }
 
         // Tạo nút đáp án
         q.a.forEach((opt, index) => {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.innerHTML = `<strong>${String.fromCharCode(65 + index)}.</strong> ${opt}`;
-            btn.onclick = () => checkAnswer(index, q.correct, q.desc, btn);
+            
+            if (isAnswered) {
+                // Nếu đã làm, disable nút và tô màu
+                btn.disabled = true;
+                if (index === q.correct) {
+                    btn.classList.add('correct');
+                }
+                if (index === q.userSelected && index !== q.correct) {
+                    btn.classList.add('wrong');
+                }
+            } else {
+                // Nếu chưa làm, gắn sự kiện click
+                btn.onclick = () => checkAnswer(index, q.correct, q.desc, btn);
+            }
+            
             optionsArea.appendChild(btn);
         });
     }
 
     function checkAnswer(selectedIndex, correctIndex, desc, clickedBtn) {
+        // Lưu lại đáp án người dùng chọn
+        questions[currentQIndex].userSelected = selectedIndex;
+
         const buttons = optionsArea.querySelectorAll('.option-btn');
         buttons.forEach(btn => btn.disabled = true);
 
@@ -668,11 +711,21 @@
             loadQuestion();
         } else {
             alert("Chúc mừng! Bạn đã hoàn thành 40 câu hỏi.");
-            resetQuiz();
+            // Reset nếu muốn làm lại từ đầu sau khi hết
+            // resetQuiz(); 
+        }
+    }
+
+    // Hàm quay lại câu trước
+    function prevQuestion() {
+        if (currentQIndex > 0) {
+            currentQIndex--;
+            loadQuestion();
         }
     }
 
     function resetQuiz() {
+        questions.forEach(q => q.userSelected = undefined); // Xóa lịch sử chọn
         currentQIndex = 0;
         loadQuestion();
     }
